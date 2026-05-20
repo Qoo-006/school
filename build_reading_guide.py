@@ -15,11 +15,15 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 # 日本語フォント
 plt.rcParams["font.family"] = ["Hiragino Sans", "Yu Gothic", "Noto Sans CJK JP", "sans-serif"]
 plt.rcParams["axes.unicode_minus"] = False
-COL_ROOT = "#7e3aa6"
-COL_LEFT = "#1f77b4"
-COL_RIGHT = "#d62728"
-COL_HL = "#f5c518"
-NAVY = "#1a2b6b"
+# 工学院大学ロゴ準拠の青・黄色基調パレット
+NAVY = "#2c4198"          # ロゴ ネイビーブルー
+YELLOW = "#fdd000"        # ロゴ イエロー（強調用）
+MUSTARD = "#b8860b"       # 黄系をプロット線に使う際の濃い目（白背景で視認性確保）
+GRAY = "#666666"          # 補助色
+COL_ROOT = NAVY           # 腰
+COL_LEFT = NAVY           # 左足（単色 + 線種で区別）
+COL_RIGHT = MUSTARD       # 右足
+COL_HL = YELLOW           # ハイライト
 
 
 def parse_bvh(path: str):
@@ -169,17 +173,17 @@ def main() -> None:
     fig, ax = plt.subplots(figsize=(11, 5))
     start = int(2.0 * fs)
     end = int(8.0 * fs)
-    # 左軸：Root_Y
-    ax.plot(t[start:end], root_y[start:end], color=COL_ROOT, lw=2, label="腰（Root）Y位置 ─ 半周期で上下")
+    # 左軸：Root_Y（ネイビー実線）
+    ax.plot(t[start:end], root_y[start:end], color=NAVY, lw=2.5, label="腰（Root）Y位置 ─ 半周期で上下")
     ax.set_xlabel("時間 [秒]", fontsize=12)
-    ax.set_ylabel("腰のY位置 [cm]", color=COL_ROOT, fontsize=12)
-    ax.tick_params(axis="y", labelcolor=COL_ROOT)
+    ax.set_ylabel("腰のY位置 [cm]", color=NAVY, fontsize=12)
+    ax.tick_params(axis="y", labelcolor=NAVY)
     ax.grid(alpha=0.3)
-    # 右軸：左足首 Xrot
+    # 右軸：左足首 Xrot（濃いマスタード黄色実線）
     ax2 = ax.twinx()
-    ax2.plot(t[start:end], sig_l[start:end], color=COL_LEFT, lw=2, label="左足首 Xrot ─ フル周期で 1 回")
-    ax2.set_ylabel("左足首 Xrot [deg]", color=COL_LEFT, fontsize=12)
-    ax2.tick_params(axis="y", labelcolor=COL_LEFT)
+    ax2.plot(t[start:end], sig_l[start:end], color=MUSTARD, lw=2.5, label="左足首 Xrot ─ フル周期で 1 回")
+    ax2.set_ylabel("左足首 Xrot [deg]", color=MUSTARD, fontsize=12)
+    ax2.tick_params(axis="y", labelcolor=MUSTARD)
     ax.set_title("Step 2 : 左足のリズムは「腰の半分の周期」 ─ Root が 2 回上下する間に左足は 1 回だけ振る",
                  fontsize=13, color=NAVY, pad=12)
     lines1, labels1 = ax.get_legend_handles_labels()
