@@ -1,0 +1,19 @@
+{
+  "by_motion": {
+    "walk": {
+      "label_ja": "歩く",
+      "avg_pairwise_distance": 30.508598794651263,
+      "std_pairwise_distance": 14.512765398800612
+    },
+    "run": {
+      "label_ja": "走る",
+      "avg_pairwise_distance": 78.23471342537648,
+      "std_pairwise_distance": 65.75397664006682
+    },
+    "skip": {
+      "label_ja": "スキップ",
+      "avg_pairwise_distance": 35.33733334885625,
+      "std_pairwise_distance": 6.413639427047268
+    }
+  }
+}

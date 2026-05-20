@@ -1,0 +1,17 @@
+{
+  "walk": {
+    "n_individuals": 4,
+    "avg_pairwise_correlation": 0.41502877325560245,
+    "min_correlation": 0.1470559871955554
+  },
+  "run": {
+    "n_individuals": 4,
+    "avg_pairwise_correlation": 0.5932957421807187,
+    "min_correlation": 0.29284054601712617
+  },
+  "skip": {
+    "n_individuals": 4,
+    "avg_pairwise_correlation": 0.615872118228451,
+    "min_correlation": 0.3044448975684967
+  }
+}
