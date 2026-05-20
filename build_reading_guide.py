@@ -149,7 +149,6 @@ def main() -> None:
                edgecolor=NAVY, lw=2, label=f"踵接地ごとのピーク（{len(peaks_abs)}個）")
     ax.set_xlabel("時間 [秒]", fontsize=12)
     ax.set_ylabel("腰のY位置 [cm]", fontsize=12)
-    ax.set_title("Step 1 : 腰（Root）が上下に揺れる ─ これが歩行リズムの正体", fontsize=14, color=NAVY, pad=12)
     ax.legend(loc="upper right", fontsize=11)
     ax.grid(alpha=0.3)
     if len(peaks_abs) >= 2:
@@ -184,8 +183,6 @@ def main() -> None:
     ax2.plot(t[start:end], sig_l[start:end], color=MUSTARD, lw=2.5, label="左足首 Xrot ─ フル周期で 1 回")
     ax2.set_ylabel("左足首 Xrot [deg]", color=MUSTARD, fontsize=12)
     ax2.tick_params(axis="y", labelcolor=MUSTARD)
-    ax.set_title("Step 2 : 左足のリズムは「腰の半分の周期」 ─ Root が 2 回上下する間に左足は 1 回だけ振る",
-                 fontsize=13, color=NAVY, pad=12)
     lines1, labels1 = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax.legend(lines1 + lines2, labels1 + labels2, loc="upper right", fontsize=11)
@@ -201,8 +198,6 @@ def main() -> None:
     ax.plot(t[start:end], sig_r[start:end], color=COL_RIGHT, lw=2.2, label="右足首 Xrot")
     ax.set_xlabel("時間 [秒]", fontsize=12)
     ax.set_ylabel("足首回転角 Xrot [deg]", fontsize=12)
-    ax.set_title("Step 3 : 左右が「ちょうど半周期ずれて」交互に動く ─ これが対称な歩行",
-                 fontsize=13, color=NAVY, pad=12)
     ax.grid(alpha=0.3)
     ax.legend(loc="upper right", fontsize=11)
     # 左右のピークを find_peaks で検出、最初の一組をハイライト
@@ -253,13 +248,8 @@ def main() -> None:
     ax.scatter([T_root], [r_root[first_peak]], color=COL_HL, s=180, zorder=5, edgecolor=NAVY, lw=2)
     ax.set_xlabel("ラグ τ [秒] ─ 信号を何秒ズラして自分自身と比べたか", fontsize=11)
     ax.set_ylabel("自己相関 ACF(τ)", fontsize=12)
-    ax.set_title("Step 4 : 自己相関（ACF）でリズムを数値化 ─ T = 0.53 s でピーク",
-                 fontsize=13, color=NAVY, pad=12)
     ax.legend(loc="upper right", fontsize=11)
     ax.grid(alpha=0.3)
-    ax.text(0.05, 0.05, "ACF が 0.5 を超えるピークが\n2 秒以上残る → 規則的で安定した歩行",
-            transform=ax.transAxes, fontsize=10, color=NAVY, va="bottom",
-            bbox=dict(boxstyle="round,pad=0.4", fc="#fff7e0", ec=COL_HL))
     plt.tight_layout()
     plt.savefig(OUT_DIR / "img_04_acf.png", dpi=130)
     plt.close()
@@ -281,14 +271,8 @@ def main() -> None:
     ax.scatter([phase_lag], [cc[peak_idx]], color=COL_HL, s=180, zorder=5, edgecolor=NAVY, lw=2)
     ax.set_xlabel("ラグ τ [秒] ─ 左信号を何秒ズラすと右と一致するか", fontsize=11)
     ax.set_ylabel("相互相関 CCF(τ)", fontsize=12)
-    ax.set_title(f"Step 5 : 左右の相互相関（CCF）─ ピーク {phase_lag:.3f} s が理想 −T/2 とほぼ一致",
-                 fontsize=13, color=NAVY, pad=12)
     ax.legend(loc="upper right", fontsize=10)
     ax.grid(alpha=0.3)
-    ax.text(0.05, 0.05,
-            "左を半周期ズラすと右にピッタリ重なる\n→ 完璧な交互ステップの証拠",
-            transform=ax.transAxes, fontsize=10, color=NAVY, va="bottom",
-            bbox=dict(boxstyle="round,pad=0.4", fc="#e8f4e8", ec="green"))
     plt.tight_layout()
     plt.savefig(OUT_DIR / "img_05_ccf.png", dpi=130)
     plt.close()
@@ -311,22 +295,15 @@ def main() -> None:
         f"CCFピーク\n{ccf_peak:.2f} × 10%\n= {contrib_ccf*100:.1f}点",
     ]
     values = [contrib_rms * 100, contrib_phase * 100, contrib_ccf * 100]
-    colors = ["#4A90E2", "#F39C12", "#27AE60"]
+    colors = [NAVY, MUSTARD, GRAY]  # 青・黄・灰 ─ ロゴ準拠
     bars = ax.bar(labels, values, color=colors, edgecolor=NAVY, lw=1.5)
     ax.set_ylim(0, 65)
     ax.set_ylabel("スコア寄与（100点満点）", fontsize=12)
-    ax.set_title(f"Step 6 : 対称性スコア = {total:.1f} 点 ─ 内訳を見れば「何が弱点か」がわかる",
-                 fontsize=13, color=NAVY, pad=12)
     ax.grid(alpha=0.3, axis="y")
     for bar, v in zip(bars, values):
         ax.text(bar.get_x() + bar.get_width() / 2, v + 1.5, f"{v:.1f}",
                 ha="center", fontsize=12, color=NAVY, weight="bold")
-    ax.set_ylim(0, 75)
-    ax.text(0.5, 0.97,
-            f"タイミング（位相差）はほぼ満点 → 左右のリズムは完璧\n"
-            f"RMS比 {rms_ratio:.2f} は約 {(1-rms_ratio)*100:.0f}% の左右振幅差 → 歩き方の癖はここ",
-            transform=ax.transAxes, ha="center", va="top", fontsize=11, color=NAVY,
-            bbox=dict(boxstyle="round,pad=0.5", fc="#fff7e0", ec=COL_HL))
+    ax.set_ylim(0, 65)
     plt.tight_layout()
     plt.savefig(OUT_DIR / "img_06_score.png", dpi=130)
     plt.close()
