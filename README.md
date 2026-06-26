@@ -8,7 +8,12 @@ mocopi（ソニー製モバイルモーションキャプチャ）で取得し�
 
 ## 🌐 Web 版レポート
 
-**https://qoo-006.github.io/school/**
+このリポジトリには複数のセミナー発表をまとめている。
+
+| 発表 | Web 版 |
+|------|--------|
+| 知能情報科学セミナーⅠ ─ BVH動作解析 | **https://qoo-006.github.io/school/** |
+| 情報学セミナー ─ 飲料戦略分析 | **https://qoo-006.github.io/school/beverage/** |
 
 GitHub Pages で公開中。デザインは工学院大学のロゴ準拠（navy/yellow/white）で統一。
 
