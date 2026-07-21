@@ -10,10 +10,11 @@ mocopi（ソニー製モバイルモーションキャプチャ）で取得し�
 
 このリポジトリには複数のセミナー発表をまとめている。
 
-| 発表 | Web 版 |
+| 発表・ノート | Web 版 |
 |------|--------|
 | 知能情報科学セミナーⅠ ─ BVH動作解析 | **https://qoo-006.github.io/school/** |
 | 情報学セミナー ─ 飲料戦略分析 | **https://qoo-006.github.io/school/beverage/** |
+| ベイズ統計・予測モデリング 学習ノート | **https://qoo-006.github.io/school/bayes/** |
 
 GitHub Pages で公開中。デザインは工学院大学のロゴ準拠（navy/yellow/white）で統一。
 
