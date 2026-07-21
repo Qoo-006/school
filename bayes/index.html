@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ベイズ統計・予測モデリング 学習ノート</title>
+<meta name="description" content="共役事前分布の計算パターンから MCMC・EM法・IRT・WAIC まで。手計算で確かめられる自作例題つきの学習ノート。">
+<style>
+:root{
+  --bg:#f7f7f5; --card:#ffffff; --ink:#1c1c1a; --sub:#6b6b66; --line:#e2e2dd;
+  --accent:#1f5d8b; --accent-soft:#e8f0f6;
+  --hot:#b03a2e; --hot-soft:#fbeae8;
+  --warm:#8a6d1f; --warm-soft:#fbf4e0;
+  --ok:#2d6a4f; --ok-soft:#e6f2ec;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#16171a; --card:#1e2024; --ink:#e8e8e4; --sub:#9a9a94; --line:#2f3238;
+    --accent:#79b8e3; --accent-soft:#1b2b38;
+    --hot:#e88b7d; --hot-soft:#33211f;
+    --warm:#d9bb64; --warm-soft:#2e2818;
+    --ok:#7fc8a4; --ok-soft:#1a2b23;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,-apple-system,sans-serif;
+  font-size:15.5px; line-height:1.85; letter-spacing:.01em;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 100px;display:grid;grid-template-columns:230px 1fr;gap:36px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr;gap:0}}
+
+header{border-bottom:1px solid var(--line);background:var(--card)}
+.hd{max-width:1180px;margin:0 auto;padding:34px 20px 26px}
+.eyebrow{font-size:12px;letter-spacing:.16em;color:var(--sub);font-weight:600}
+h1{font-size:clamp(24px,4vw,34px);margin:.35em 0 .3em;line-height:1.3;letter-spacing:-.01em}
+.lede{color:var(--sub);font-size:14px;margin:0;max-width:62ch}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font-size:12px;padding:4px 11px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--sub)}
+
+nav{position:sticky;top:0;align-self:start;padding-top:34px;max-height:100vh;overflow:auto}
+@media(max-width:900px){nav{position:static;max-height:none;padding:20px 0 0;border-bottom:1px solid var(--line);margin-bottom:8px}}
+nav ol{list-style:none;margin:0;padding:0;font-size:13px}
+nav li{margin:0 0 2px}
+nav a{display:block;padding:5px 10px;border-radius:6px;color:var(--sub);text-decoration:none}
+nav a:hover{background:var(--accent-soft);color:var(--accent)}
+nav .ttl{font-size:11px;letter-spacing:.14em;color:var(--sub);font-weight:700;margin:18px 0 6px 10px}
+
+main{padding-top:34px;min-width:0}
+section{margin:0 0 46px;scroll-margin-top:20px}
+h2{font-size:21px;margin:0 0 6px;padding-bottom:9px;border-bottom:2px solid var(--ink);letter-spacing:-.01em}
+h3{font-size:16.5px;margin:32px 0 8px;color:var(--accent)}
+h4{font-size:14.5px;margin:20px 0 6px}
+p{margin:.7em 0}
+.sec-note{color:var(--sub);font-size:13px;margin:8px 0 20px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;margin:16px 0}
+.card.hot{border-left:4px solid var(--hot)}
+.card.warm{border-left:4px solid var(--warm)}
+.card.ok{border-left:4px solid var(--ok)}
+.card.acc{border-left:4px solid var(--accent)}
+.card h4:first-child{margin-top:0}
+
+.qbox{background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:22px 0 0}
+.qbox .qhd{background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:13px;padding:8px 18px;letter-spacing:.06em}
+.qbox .qbody{padding:16px 20px;font-size:14.5px}
+.ans{border-left:3px solid var(--ok);background:var(--ok-soft);border-radius:0 8px 8px 0;padding:14px 18px;margin:12px 0 26px}
+.ans .lb{font-size:11px;letter-spacing:.14em;font-weight:700;color:var(--ok);display:block;margin-bottom:6px}
+.point{background:var(--warm-soft);border-radius:8px;padding:11px 16px;margin:12px 0;font-size:13.5px}
+.point::before{content:"POINT";font-size:10px;letter-spacing:.14em;font-weight:700;color:var(--warm);display:block;margin-bottom:3px}
+
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:13.5px}
+th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+th{background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+ul,ol{padding-left:1.4em}
+li{margin:.3em 0}
+code{font-family:var(--mono);font-size:.88em;background:var(--accent-soft);color:var(--accent);padding:1px 5px;border-radius:4px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;line-height:1.65}
+pre code{background:none;color:var(--ink);padding:0}
+
+var,.v{font-family:"Times New Roman",Georgia,serif;font-style:italic;font-size:1.06em}
+.eq{text-align:center;margin:14px 0;font-family:"Times New Roman",Georgia,serif;font-size:17px;overflow-x:auto;padding:4px 0}
+.eq.l{text-align:left}
+.frac{display:inline-flex;flex-direction:column;vertical-align:-.55em;text-align:center;margin:0 .2em;line-height:1.2;font-size:.92em}
+.frac>span:first-child{border-bottom:1.2px solid currentColor;padding:0 .35em}
+.frac>span:last-child{padding:0 .35em}
+sub,sup{font-size:.72em}
+.tag{display:inline-block;font-size:10.5px;letter-spacing:.1em;font-weight:700;padding:2px 8px;border-radius:4px;vertical-align:2px;margin-right:8px}
+.tag.a{background:var(--hot-soft);color:var(--hot)}
+.tag.b{background:var(--accent-soft);color:var(--accent)}
+
+.ascii{font-family:var(--mono);font-size:12.5px;line-height:1.5;white-space:pre;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto}
+.check{list-style:none;padding:0}
+.check li{padding-left:28px;position:relative;margin:.5em 0}
+.check li::before{content:"";position:absolute;left:0;top:.42em;width:15px;height:15px;border:1.6px solid var(--sub);border-radius:3px}
+
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:20px;color:var(--sub);font-size:12.5px}
+footer a{color:var(--accent)}
+
+@media print{
+  body{background:#fff;font-size:10.5pt;line-height:1.6}
+  nav{display:none}
+  .wrap{grid-template-columns:1fr;max-width:none;padding:0}
+  .qbox,.ans,.card{page-break-inside:avoid}
+  h2{page-break-after:avoid}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd">
+    <div class="eyebrow">学習ノート ／ 工学院大学 情報科学科</div>
+    <h1>ベイズ統計・予測モデリング 学習ノート</h1>
+    <p class="lede">共役事前分布の計算パターンから、階層ベイズ・EM法・MCMC・項目反応理論・WAIC まで。すべて手計算で追える自作の数値例つきでまとめた、自分用の整理ノートです。</p>
+    <div class="meta">
+      <span class="chip">自作例題 10問＋解答</span>
+      <span class="chip">数式は外部ライブラリなし</span>
+      <span class="chip">印刷・PDF化対応</span>
+      <span class="chip">2026-07</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+<nav>
+  <div class="ttl">基礎</div>
+  <ol>
+    <li><a href="#s1">1. ベイズ推定の骨格</a></li>
+    <li><a href="#s2">2. 共役事前分布</a></li>
+    <li><a href="#s3">3. 計算パターン集</a></li>
+  </ol>
+  <div class="ttl">モデル</div>
+  <ol>
+    <li><a href="#s4">4. 階層ベイズ</a></li>
+    <li><a href="#s5">5. 混合正規分布・EM法</a></li>
+    <li><a href="#s6">6. MCMC</a></li>
+    <li><a href="#s7">7. ロジスティック回帰・IRT</a></li>
+    <li><a href="#s8">8. 重回帰・変数選択</a></li>
+    <li><a href="#s9">9. 変化点検出・ガウス過程</a></li>
+  </ol>
+  <div class="ttl">評価</div>
+  <ol>
+    <li><a href="#s10">10. モデル比較・WAIC</a></li>
+  </ol>
+  <div class="ttl">仕上げ</div>
+  <ol>
+    <li><a href="#s11">11. チートシート</a></li>
+    <li><a href="#s12">12. 演習問題</a></li>
+    <li><a href="#s13">13. つまずきどころ</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============ 1 ============ -->
+<section id="s1">
+  <h2>1. ベイズ推定の骨格</h2>
+  <p class="sec-note">全部ここに戻ってくる。どんなに式が複雑になっても、やっていることは1行で書ける。</p>
+
+  <div class="card acc">
+    <div class="eq" style="font-size:20px;margin:6px 0"><var>p</var>(<var>θ</var> | <var>D</var>) ∝ <var>p</var>(<var>D</var> | <var>θ</var>) · <var>p</var>(<var>θ</var>)</div>
+    <div class="eq" style="font-size:14px;margin:0;color:var(--sub)">事後分布 ∝ 尤度 × 事前分布</div>
+  </div>
+
+  <h3>なぜ「∝」で書けるのか</h3>
+  <p>同時分布は2通りの順序で分解できる（乗法定理）。</p>
+  <div class="eq"><var>p</var>(<var>D</var>, <var>θ</var>) = <var>p</var>(<var>D</var> | <var>θ</var>) <var>p</var>(<var>θ</var>) = <var>p</var>(<var>θ</var> | <var>D</var>) <var>p</var>(<var>D</var>)</div>
+  <p>同じものを2通りに書いただけなので等号で結び、<var>p</var>(<var>θ</var>|<var>D</var>) について解く。</p>
+  <div class="eq"><var>p</var>(<var>θ</var> | <var>D</var>) = <span class="frac"><span><var>p</var>(<var>D</var> | <var>θ</var>) <var>p</var>(<var>θ</var>)</span><span><var>p</var>(<var>D</var>)</span></span></div>
+  <p>分母 <var>p</var>(<var>D</var>) = ∫ <var>p</var>(<var>D</var>|<var>θ</var>)<var>p</var>(<var>θ</var>) d<var>θ</var> は <var>θ</var> が積分で消えているので<b><var>θ</var> についての定数</b>。だから比例関係として書ける。</p>
+
+  <h3>用語の対応</h3>
+  <div class="tw"><table>
+    <tr><th style="width:150px">項</th><th style="width:130px">呼び名</th><th>意味</th></tr>
+    <tr><td><var>p</var>(<var>θ</var>)</td><td>事前分布 prior</td><td>データを見る前の信念</td></tr>
+    <tr><td><var>p</var>(<var>D</var>|<var>θ</var>)</td><td>尤度 likelihood</td><td>そのパラメータならこのデータがどれくらい出やすいか</td></tr>
+    <tr><td><var>p</var>(<var>θ</var>|<var>D</var>)</td><td>事後分布 posterior</td><td>データを見た後に更新された信念</td></tr>
+    <tr><td><var>p</var>(<var>D</var>)</td><td>周辺尤度 evidence</td><td>正規化定数。<var>θ</var> に依存しない</td></tr>
+  </table></div>
+
+  <div class="point">確率と尤度の違い：<b>確率は「パラメータを固定 → データがどうなるか」、尤度は「データを固定 → パラメータがどれくらいもっともらしいか」</b>。式は同じでも、どちらを動かして見ているかが逆。</div>
+
+  <h3>点推定と事後予測分布</h3>
+  <ul>
+    <li><b>点推定</b>：事後分布の代表値（平均・最頻値＝MAP）を1つ選んで「この値だ」と決め打ちする。</li>
+    <li><b>事後予測分布</b>：パラメータの迷いごと積分して、次に来るデータの分布を出す。<b>予測の幅が点推定より広くなる</b>。
+      <div class="eq"><var>p</var>(<var>x</var><sub>new</sub> | <var>D</var>) = ∫ <var>p</var>(<var>x</var><sub>new</sub> | <var>θ</var>) <var>p</var>(<var>θ</var> | <var>D</var>) d<var>θ</var></div>
+      分散が「現象そのもののばらつき」＋「パラメータ推定の自信のなさ」の和になるため。データが少ないほど幅が広がり、リスクを安全側に見積もれる。</li>
+  </ul>
+
+  <h3>精度（precision）という書き方</h3>
+  <p>ベイズ統計では正規分布を分散 <var>σ</var><sup>2</sup> ではなく、その逆数の<b>精度 <var>τ</var> = 1/<var>σ</var><sup>2</sup></b> で書くことが多い。</p>
+  <div class="eq">𝒩(<var>x</var> | <var>μ</var>, <var>τ</var>) = <span class="frac"><span><var>τ</var><sup>1/2</sup></span><span>√(2π)</span></span> exp{ −<span class="frac"><span><var>τ</var></span><span>2</span></span>(<var>x</var> − <var>μ</var>)<sup>2</sup> }</div>
+  <p>理由は式が綺麗になるから。分散のままだと「1/分散」の足し算で分数が重なるが、精度なら</p>
+  <div class="eq" style="font-size:16px"><b>事後の精度 = 事前の精度 + データの精度</b></div>
+  <p>という単純な足し算になる。以降このノートでは <var>τ</var> は<b>常に精度</b>（分散ではない）。</p>
+</section>
+
+<!-- ============ 2 ============ -->
+<section id="s2">
+  <h2>2. 共役事前分布</h2>
+
+  <p>尤度に対して、<b>掛けても分布の「形」が変わらない</b>ように選んだ事前分布のこと。事後分布が事前と同じ族になるので、積分を一切解かずに<b>パラメータの更新だけで</b>推論が終わる。</p>
+
+  <div class="card ok">
+    <h4>共役のうまみ</h4>
+    <p style="margin-bottom:0">やっている計算は本質的に<b>指数（べき）の足し算</b>だけ。「元の形（事前）とデータの形（尤度）が同じ数式構造をしているから、混ぜても形が崩れない」と理解しておけばよい。</p>
+  </div>
+
+  <div class="tw"><table>
+    <tr><th style="width:190px">尤度（データのモデル）</th><th style="width:110px">未知パラメータ</th><th style="width:150px">共役事前分布</th><th>事後分布</th></tr>
+    <tr>
+      <td>ベルヌーイ／二項</td>
+      <td>成功確率 <var>m</var></td>
+      <td>Beta(<var>α</var>, <var>β</var>)</td>
+      <td>Beta(<var>α</var> + 成功数, &nbsp;<var>β</var> + 失敗数)</td>
+    </tr>
+    <tr>
+      <td>カテゴリカル／多項</td>
+      <td>確率ベクトル <var>π</var></td>
+      <td>Dirichlet(<var>α</var>)</td>
+      <td>Dir(<var>α<sub>k</sub></var> + <var>n<sub>k</sub></var>)</td>
+    </tr>
+    <tr>
+      <td>正規（<b>精度既知</b>）</td>
+      <td>平均 <var>μ</var></td>
+      <td>𝒩(<var>m</var><sub>0</sub>, <var>τ</var><sub>0</sub>)</td>
+      <td>精度 <var>τ</var>′ = <var>τ</var><sub>0</sub> + <var>nτ</var><br>平均 <var>m</var>′ = (<var>τ</var><sub>0</sub><var>m</var><sub>0</sub> + <var>τ</var>Σ<var>x<sub>i</sub></var>) / <var>τ</var>′</td>
+    </tr>
+    <tr>
+      <td>正規（<b>平均既知</b>）</td>
+      <td>精度 <var>τ</var></td>
+      <td>Gamma(<var>a</var>, <var>b</var>)</td>
+      <td>Gamma(<var>a</var> + <var>n</var>/2, &nbsp;<var>b</var> + ½Σ(<var>x<sub>i</sub></var> − <var>μ</var>)<sup>2</sup>)</td>
+    </tr>
+    <tr>
+      <td>ポアソン</td>
+      <td>発生率 <var>λ</var></td>
+      <td>Gamma(<var>a</var>, <var>b</var>)</td>
+      <td>Gamma(<var>a</var> + Σ<var>x<sub>i</sub></var>, &nbsp;<var>b</var> + <var>n</var>)</td>
+    </tr>
+  </table></div>
+
+  <div class="point">なぜ精度の事前にガンマを使うのか：<b>正規分布の式を <var>μ</var> について見ると2次関数の形だが、<var>τ</var> について見るとガンマ分布と同じ形（<var>τ</var><sup><var>a</var></sup><var>e</var><sup>−<var>bτ</var></sup>）をしているから</b>。だから共役になる。</div>
+
+  <h3>事前分布の影響はいつ消えるか</h3>
+  <ul>
+    <li>データが少ないうちは事前分布に強く引っ張られる。データが増えるほど尤度が支配的になり、<b>的外れな事前分布の影響は消えていく</b>。データが無限にあれば最尤推定と一致する。</li>
+    <li>「データが十分多いか」の確認法：<b>まったく違う事前分布をいくつか試して、事後分布が同じ形に重なるか</b>を見る。</li>
+    <li>データが少ないときは、完全に平らな<b>無情報事前分布</b>より、最低限の常識を入れた<b>弱情報事前分布</b>（負の値は取らない、極端に大きくはならない等）の方が推定が安定する。</li>
+  </ul>
+</section>
+
+<!-- ============ 3 ============ -->
+<section id="s3">
+  <h2>3. 計算パターン集 <span class="tag a" style="vertical-align:4px">手を動かす</span></h2>
+  <p class="sec-note">共役の4パターンを、自分で作った数値例で最後まで計算する。この手つきが身につけば、あとは数字が変わるだけ。</p>
+
+  <div class="card ok">
+    <h4>共通の手順テンプレート</h4>
+    <ol style="margin:0">
+      <li><b>尤度を書く</b>。順序が指定されていれば二項係数は付けない。複数データなら掛ける（＝指数を足す）。</li>
+      <li><b>事前分布を ∝ の形に落とす</b>。正規化定数は全部「定数」に投げる。</li>
+      <li><b>掛ける</b>。指数（べき）を足す。正規分布なら log を取って2次関数の足し算にする。</li>
+      <li><b>既知の分布の形と見比べる</b>。Beta / Gamma / 正規のどれかに必ずなる。</li>
+      <li><b>平均・最頻値を答える</b>。</li>
+      <li><b>図を描く</b>。事前より事後が「尖る」「中心が移動する」を示す。</li>
+    </ol>
+  </div>
+
+  <!-- 3-1 -->
+  <h3>パターン① 二項 × ベータ</h3>
+  <div class="qbox"><div class="qhd">例題 3-1</div><div class="qbody">
+    あるボタンのクリック率 <var>m</var> を推定したい。事前分布を <var>p</var>(<var>m</var>) = Beta(<var>m</var> | 2, 3) と見積もった。ボタンを 10 回表示したところ 3 回クリックされた。<br>
+    (1) 事後分布を求めよ。 (2) 事後分布の平均と最頻値を求めよ。 (3) <var>m</var> ≥ 0.5 となる確率を表す定積分の式を書け。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    <p><b>(1)</b> 尤度は Binomial(3 | 10, <var>m</var>) ∝ <var>m</var><sup>3</sup>(1−<var>m</var>)<sup>7</sup>。事前は Beta(2,3) ∝ <var>m</var><sup>1</sup>(1−<var>m</var>)<sup>2</sup>。掛けて指数を足すと</p>
+    <div class="eq"><var>p</var>(<var>m</var>|<var>D</var>) ∝ <var>m</var><sup>3+1</sup>(1−<var>m</var>)<sup>7+2</sup> = <var>m</var><sup>4</sup>(1−<var>m</var>)<sup>9</sup></div>
+    <p>Beta(<var>α</var>,<var>β</var>) ∝ <var>m</var><sup><var>α</var>−1</sup>(1−<var>m</var>)<sup><var>β</var>−1</sup> と見比べて <var>α</var> = 5, <var>β</var> = 10：</p>
+    <div class="eq"><b>Beta(<var>m</var> | 5, 10)</b></div>
+    <p style="color:var(--sub);font-size:13.5px">公式どおり Beta(2+3, 3+7) = Beta(5,10)。<b>成功回数を <var>α</var> に、失敗回数を <var>β</var> に足すだけ</b>。</p>
+    <p><b>(2)</b> 平均 = <var>α</var>/(<var>α</var>+<var>β</var>) = 5/15 = <b>1/3 ≈ 0.333</b><br>
+    最頻値 = (<var>α</var>−1)/(<var>α</var>+<var>β</var>−2) = 4/13 ≈ <b>0.308</b></p>
+    <p style="color:var(--sub);font-size:13.5px">観測だけなら 3/10 = 0.3。事前が「もう少し高い」と主張していたぶん、わずかに上に寄っている。</p>
+    <p><b>(3)</b></p>
+    <div class="eq"><var>P</var>(<var>m</var> ≥ 0.5 | <var>D</var>) = ∫<sub>0.5</sub><sup>1</sup> Beta(<var>m</var> | 5, 10) d<var>m</var></div>
+    <div class="ascii">  p(m|D)
+    │    ╭─╮   Beta(5,10)
+    │   ╱   ╲
+    │  ╱     ╲
+    │ ╱       ╲___
+    │╱            ╲▒▒▒▒▒  ← P(m ≥ 0.5)
+    └┴──┴──────────┴──────── m
+     0 0.31        0.5     1</div>
+  </div>
+
+  <div class="card warm">
+    <h4>要注意：順序が指定された尤度に二項係数は付かない</h4>
+    <p style="margin-bottom:0">「4回中2回当たった」なら <sub></sub><var>4</var>C<var>2</var> <var>m</var><sup>2</sup>(1−<var>m</var>)<sup>2</sup>。<br>
+    「表・裏・裏・表 の順に出た」なら組み合わせは1通りしかないので <b><var>m</var><sup>2</sup>(1−<var>m</var>)<sup>2</sup></b>（係数なし）。<br>
+    事後分布を求めるだけなら定数倍は ∝ に吸収されるので結果は同じだが、「尤度を書け」と言われたときは区別する。</p>
+  </div>
+
+  <!-- 3-2 -->
+  <h3>パターン② 正規 × 正規（平均が未知）</h3>
+  <div class="qbox"><div class="qhd">例題 3-2</div><div class="qbody">
+    センサーの測定値 <var>x</var> が平均 <var>μ</var>・精度 4 の正規分布に従うとする：<var>p</var>(<var>x</var>|<var>μ</var>) = 𝒩(<var>x</var> | <var>μ</var>, 4)。<br>
+    <var>μ</var> の事前分布を <var>p</var>(<var>μ</var>) = 𝒩(<var>μ</var> | 20, 1) とする。<var>x</var> = 25 が観測された。<br>
+    (1) 対数事前分布・(2) 対数尤度・(3) 対数事後分布を <var>μ</var> の式で表し、(4) 事後分布を正規分布として書け。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    <p><b>(1) 対数事前分布</b> — log を取ると指数の肩が降りてくる。前の係数は <var>μ</var> に依存しないので定数へ。</p>
+    <div class="eq">log <var>p</var>(<var>μ</var>) = −<span class="frac"><span>1</span><span>2</span></span>(<var>μ</var>−20)<sup>2</sup> + <var>C</var> = −0.5<var>μ</var><sup>2</sup> + 20<var>μ</var> + <var>C</var></div>
+    <p><b>(2) 対数尤度</b></p>
+    <div class="eq">log <var>p</var>(<var>x</var>=25|<var>μ</var>) = −<span class="frac"><span>4</span><span>2</span></span>(25−<var>μ</var>)<sup>2</sup> + <var>C</var> = −2<var>μ</var><sup>2</sup> + 100<var>μ</var> + <var>C</var></div>
+    <p><b>(3) 対数事後分布</b> — 掛け算が log では足し算になる。</p>
+    <div class="eq">log <var>p</var>(<var>μ</var>|<var>x</var>) = (−2<var>μ</var><sup>2</sup> + 100<var>μ</var>) + (−0.5<var>μ</var><sup>2</sup> + 20<var>μ</var>) + <var>C</var> = −2.5<var>μ</var><sup>2</sup> + 120<var>μ</var> + <var>C</var></div>
+    <p>平方完成する：</p>
+    <div class="eq">= −2.5(<var>μ</var><sup>2</sup> − 48<var>μ</var>) + <var>C</var> = −2.5(<var>μ</var> − 24)<sup>2</sup> + <var>C</var></div>
+    <p><b>(4)</b> −(<var>τ</var>/2)(<var>μ</var>−<var>m</var>)<sup>2</sup> の形と見比べて 精度 <var>τ</var>′ = 5、平均 <var>m</var>′ = 24：</p>
+    <div class="eq"><b>𝒩(<var>μ</var> | 24, 5)</b></div>
+    <p><b>公式で検算</b>：事後精度 = 1 + 4 = 5 ✓／事後平均 = (1·20 + 4·25)/5 = 120/5 = 24 ✓<br>
+    事前の主張（20）と実測（25）を、それぞれの精度で重みづけした<b>内分点</b>になっている。データの方が精度が高い（4 vs 1）ので、25 寄りに来る。</p>
+    <div class="ascii">        事後 N(24,5)
+              ╱│╲       事前 N(20,1)
+             ╱ │ ╲    ╱‾‾‾╲
+            ╱  │  ╲ ╱      ╲
+       ────┴───┴───┴────────┴──── μ
+           20  24  25
+          事前  事後 データ</div>
+  </div>
+
+  <div class="point">この計算の肝は<b>「log を取ると掛け算が2次関数の足し算になる」</b>こと。<var>μ</var><sup>2</sup> の係数を足したものが −<var>τ</var>′/2、平方完成の中心が事後平均。数値が変わっても手順はこれだけ。</div>
+
+  <!-- 3-3 -->
+  <h3>パターン③ 正規 × ガンマ（精度が未知）</h3>
+  <div class="qbox"><div class="qhd">例題 3-3</div><div class="qbody">
+    <var>x</var> ∼ Gamma(<var>a</var>, <var>b</var>) のとき <var>E</var>[<var>x</var>] = <var>a</var>/<var>b</var> である。<br>
+    データ <var>x</var> が平均 50・精度 <var>τ</var> の正規分布に従うと仮定し、<var>τ</var> の事前分布を Gamma(<var>τ</var> | 2, 2) とする。<br>
+    <var>D</var> = {46, 53, 55} を観測した。(1) 事前分布の平均 (2) 事後分布 (3) 事後分布の平均 を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    <p><b>(1)</b> <var>E</var>[<var>τ</var>] = 2/2 = <b>1</b>（＝分散1と見込んでいた）</p>
+    <p><b>(2)</b> 平均既知・精度未知の正規尤度を <var>τ</var> について整理すると</p>
+    <div class="eq"><var>p</var>(<var>D</var>|<var>τ</var>) ∝ <var>τ</var><sup><var>n</var>/2</sup> exp{ −<span class="frac"><span><var>τ</var></span><span>2</span></span> Σ<sub><var>i</var></sub>(<var>x<sub>i</sub></var> − 50)<sup>2</sup> }</div>
+    <p><var>n</var> = 3、Σ(<var>x<sub>i</sub></var>−50)<sup>2</sup> = (−4)<sup>2</sup> + 3<sup>2</sup> + 5<sup>2</sup> = 16 + 9 + 25 = 50。よって</p>
+    <div class="eq"><var>p</var>(<var>D</var>|<var>τ</var>) ∝ <var>τ</var><sup>3/2</sup> exp(−25<var>τ</var>)</div>
+    <p>事前 Gamma(2,2) ∝ <var>τ</var><sup>2−1</sup><var>e</var><sup>−2<var>τ</var></sup> = <var>τ</var><sup>1</sup><var>e</var><sup>−2<var>τ</var></sup> を掛けて（<b>指数を足すだけ</b>）</p>
+    <div class="eq"><var>p</var>(<var>τ</var>|<var>D</var>) ∝ <var>τ</var><sup>3/2 + 1</sup> exp{−(25 + 2)<var>τ</var>} = <var>τ</var><sup>5/2</sup><var>e</var><sup>−27<var>τ</var></sup></div>
+    <p>Gamma(<var>α</var>′,<var>β</var>′) ∝ <var>τ</var><sup><var>α</var>′−1</sup><var>e</var><sup>−<var>β</var>′<var>τ</var></sup> と比較して</p>
+    <div class="eq"><b>Gamma(<var>τ</var> | 7/2, 27)</b></div>
+    <p style="color:var(--sub);font-size:13.5px">公式で検算：Gamma(<var>a</var>+<var>n</var>/2, <var>b</var>+½Σ) = Gamma(2+1.5, 2+25) = Gamma(3.5, 27) ✓</p>
+    <p><b>(3)</b> <var>E</var>[<var>τ</var>|<var>D</var>] = (7/2)/27 = <b>7/54 ≈ 0.130</b></p>
+    <p>精度が 1 → 0.13 に下がった＝<b>分散が大きい</b>（≈7.7、標準偏差 ≈2.8）と学習した。実際データは 50 から ±4, +3, +5 ばらついているので妥当。</p>
+    <div class="ascii">  p(τ)
+    │▲ 事後 Gamma(7/2,27)  平均0.13
+    ││╲
+    ││ ╲
+    ││  ╲    ╭──╮ 事前 Gamma(2,2) 平均1
+    ││   ╲__╭╯   ╰──╮
+    │└      ╰         ╰──────
+    └┴──┴───┴──────────────── τ
+     0 0.13 1                 4</div>
+    <p style="margin-bottom:0">データを得て<b>不確かさが小さくなった＝分布が尖った</b>のがポイント。</p>
+  </div>
+
+  <!-- 3-4 -->
+  <h3>パターン④ ポアソン × ガンマ</h3>
+  <div class="qbox"><div class="qhd">例題 3-4</div><div class="qbody">
+    1日あたりの問い合わせ件数が Poisson(<var>λ</var>) に従うとする。<var>λ</var> の事前分布を Gamma(2, 0.1) とした。5日間で {8, 12, 10, 9, 11} を観測した。事後分布と事後平均を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    <p>ポアソン尤度は <var>p</var>(<var>D</var>|<var>λ</var>) ∝ <var>λ</var><sup>Σ<var>x<sub>i</sub></var></sup><var>e</var><sup>−<var>nλ</var></sup>。Σ<var>x<sub>i</sub></var> = 50、<var>n</var> = 5。<br>
+    事前 ∝ <var>λ</var><sup>2−1</sup><var>e</var><sup>−0.1<var>λ</var></sup>。掛けて</p>
+    <div class="eq"><var>p</var>(<var>λ</var>|<var>D</var>) ∝ <var>λ</var><sup>50 + 1</sup><var>e</var><sup>−(5 + 0.1)<var>λ</var></sup> &nbsp;⇒&nbsp; <b>Gamma(52, 5.1)</b></div>
+    <div class="eq">事後平均 = <span class="frac"><span>52</span><span>5.1</span></span> ≈ <b>10.2</b></div>
+    <p style="margin-bottom:0">データの平均は 50/5 = 10。事前が 2/0.1 = 20 を主張していたが、データ5日ぶんに押し切られてほぼ 10 に落ち着いた。</p>
+  </div>
+
+  <!-- 3-5 -->
+  <h3>パターン⑤ カテゴリカル × ディリクレ</h3>
+  <p>ベータ分布の <var>K</var> 次元版。<b>Beta(<var>α</var>,<var>β</var>) は Dir(<var>α</var><sub>1</sub>,<var>α</var><sub>2</sub>) の2次元版</b>と理解しておくと一発で書ける。</p>
+  <div class="eq">Dir(<var>π</var> | <var>α</var>) ∝ Π<sub><var>k</var></sub> <var>π<sub>k</sub></var><sup><var>α<sub>k</sub></var>−1</sup> &nbsp;⇒&nbsp; 事後 = Dir(<var>α<sub>k</sub></var> + <var>n<sub>k</sub></var>)</div>
+  <div class="qbox"><div class="qhd">例題 3-5</div><div class="qbody">
+    3種類のカテゴリ {A, B, C} からなるデータを 20 件観測し、それぞれ 9, 6, 5 件だった。事前分布を Dir(1, 1, 1)（一様）としたときの事後分布と各カテゴリの事後平均を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    事後 = Dir(1+9, 1+6, 1+5) = <b>Dir(10, 7, 6)</b>。<br>
+    事後平均 = <var>α<sub>k</sub></var> / Σ<var>α</var> = <b>10/23, 7/23, 6/23</b> ≈ 0.435, 0.304, 0.261。<br>
+    <span style="color:var(--sub);font-size:13.5px">単純な比率 9/20, 6/20, 5/20 = 0.45, 0.30, 0.25 より、事前の一様分布のぶんだけ均等側に少し寄る（＝データが少ないカテゴリが極端な値にならない）。</span>
+  </div>
+</section>
+
+<!-- ============ 4 ============ -->
+<section id="s4">
+  <h2>4. 階層ベイズ</h2>
+
+  <h3>何が問題なのか</h3>
+  <p>10 店舗それぞれで「来店客のうち何人が会員登録したか」を記録したとする。ここで取れる立場は2つある。</p>
+  <div class="tw"><table>
+    <tr><th style="width:150px">立場</th><th>仮定</th><th>問題点</th></tr>
+    <tr><td><b>完全プーリング</b></td><td>全店舗で登録率は共通の <var>m</var></td><td>店舗ごとの個性を完全に無視する。データのばらつきがモデルより大きくなる</td></tr>
+    <tr><td><b>完全独立</b></td><td>店舗ごとに <var>m<sub>i</sub></var> をバラバラに推定</td><td>来店客が数人しかいない店舗の推定が極端になる（2人中2人登録 → 100%）</td></tr>
+    <tr><td><b>階層ベイズ</b></td><td>店舗ごとに <var>m<sub>i</sub></var> を持つが、それらは共通の親分布から生まれる</td><td>両者のいいとこ取り</td></tr>
+  </table></div>
+
+  <h3>モデルの形</h3>
+  <div class="eq"><var>x<sub>i</sub></var> ∼ Binomial(<var>n<sub>i</sub></var>, <var>m<sub>i</sub></var>) ,&nbsp;&nbsp; <var>m<sub>i</sub></var> ∼ Beta(<var>α</var>, <var>β</var>) ,&nbsp;&nbsp; <var>α</var>, <var>β</var> ∼ 無情報事前分布</div>
+  <div class="ascii">      (α)      (β)        ← 超パラメータ（プレートの外＝全グループ共通）
+        ╲      ╱
+         ↓    ↓
+    ┌───────────────────┐
+    │       (m_i)       │   ← グループごとのパラメータ
+    │         ↓         │
+    │       [x_i]       │   ← 観測データ（四角＝観測済み）
+    │            N = 10 │
+    └───────────────────┘
+        プレート（グループ数だけ繰り返し）</div>
+  <p><b>グラフィカルモデルを描くときのルール</b>：丸＝確率変数（未観測）／四角または塗りつぶし＝観測データ／プレート（枠）＝繰り返し。<b>全グループ共通の超パラメータはプレートの外</b>に置く。</p>
+
+  <h3>部分収縮（partial pooling）— これが本質</h3>
+  <div class="card acc">
+    <p style="margin-bottom:0"><b>データが少ないグループは全体の平均に強く引っ張られ、データが十分多いグループは自分の個性がそのまま残る</b>。この調整が自動で行われる。<br>
+    だから「2人中2人登録した店舗」が 100% と推定されることはなく、全体の傾向に寄せられる。逆にデータが豊富な店舗は、全体から外れていてもその個性が保たれる。</p>
+  </div>
+  <ul>
+    <li><b>情報の共有</b>：グループ同士がデータを融通し合っている状態。単に変数を増やしているのではない。</li>
+    <li><b>超パラメータの事前分布</b>：さらに上の階層については知識がないことが多いので、無情報（幅の広い一様・正規）を置くのが一般的。データが十分あれば下層が上層を自律的に推定してくれる。</li>
+    <li><b>限界</b>：階層を3段4段と深くすると変数が「グループ数 × パラメータ数」で膨らみ、MCMC の計算コストが爆発して収束しなくなる。</li>
+  </ul>
+
+  <h3>データの分布とモデルの予測を重ねて見る</h3>
+  <p>完全プーリングが妥当かどうかは、<b>予測分布と実データのヒストグラムを重ね描き</b>すれば見える。</p>
+  <div class="ascii">度数
+  4│         ▓ ▓            ▓ = モデルの予測（二項分布）
+  3│         ▓ ▓            █ = 実データ
+  2│  █ █ ▓█ ▓█ █ █
+  1│█ █ █ ▓█ ▓█ █ █ █
+  0└─┴─┴─┴──┴──┴─┴─┴───
+    0 1 2  3  4 5</div>
+  <p style="margin-bottom:0"><b>実データの方が両端（0 や最大値）に厚い＝ばらつきが二項分布より大きい</b>なら、「グループごとに確率が違うのでは」という階層モデルの動機になる。この「過分散」の見つけ方は実務でも使う。</p>
+</section>
+
+<!-- ============ 5 ============ -->
+<section id="s5">
+  <h2>5. 混合正規分布・潜在変数・EM法</h2>
+
+  <h3>混合正規分布（GMM）</h3>
+  <div class="eq"><var>p</var>(<var>x</var>) = Σ<sub><var>k</var>=1</sub><sup><var>K</var></sup> <var>w<sub>k</sub></var> 𝒩(<var>x</var> | <var>μ<sub>k</sub></var>, <var>σ<sub>k</sub></var>) ,&nbsp;&nbsp; Σ<var>w<sub>k</sub></var> = 1</div>
+  <ul>
+    <li><b>使いどころ</b>：データに山が複数ある場合。例えばWebサイトの滞在時間は「ライトユーザー」と「ヘビーユーザー」で2つの山になる。単一の正規分布で当てると平均が谷間に来て、どちらも説明できない。</li>
+    <li><b>潜在変数 <var>z</var></b>：各データがどの成分から生成されたかを表すラベル。<b>観測できない</b>ので推定する。クラスタ番号だと解釈してよい。
+      <div class="eq"><var>z</var> ∼ Categorical(<var>w</var>) ,&nbsp;&nbsp; <var>x</var> | <var>z</var>=<var>k</var> ∼ 𝒩(<var>μ<sub>k</sub></var>, <var>σ<sub>k</sub></var>)</div>
+    </li>
+    <li><b>混合重み <var>w<sub>k</sub></var></b>：各成分の割合。事前分布にディリクレを置く（パターン⑤とつながる）。</li>
+  </ul>
+
+  <h3>EM アルゴリズム</h3>
+  <div class="card">
+    <p style="margin-top:0"><b>E ステップ（期待値）</b>：パラメータを固定して、各データ <var>i</var> が成分 <var>k</var> に属する確率（負担率 <var>γ<sub>ik</sub></var>）を計算する。</p>
+    <div class="eq"><var>γ<sub>ik</sub></var> = <span class="frac"><span><var>w<sub>k</sub></var> 𝒩(<var>x<sub>i</sub></var>|<var>μ<sub>k</sub></var>, <var>σ<sub>k</sub></var>)</span><span>Σ<sub><var>j</var></sub> <var>w<sub>j</sub></var> 𝒩(<var>x<sub>i</sub></var>|<var>μ<sub>j</sub></var>, <var>σ<sub>j</sub></var>)</span></span></div>
+    <p><b>M ステップ（最大化）</b>：<var>γ</var> を重みにして、重み付き平均・重み付き分散でパラメータを更新する。</p>
+    <div class="eq"><var>n<sub>k</sub></var> = Σ<sub><var>i</var></sub><var>γ<sub>ik</sub></var> ,&nbsp; <var>w<sub>k</sub></var> = <var>n<sub>k</sub></var>/<var>N</var> ,&nbsp; <var>μ<sub>k</sub></var> = <span class="frac"><span>Σ<sub><var>i</var></sub><var>γ<sub>ik</sub>x<sub>i</sub></var></span><span><var>n<sub>k</sub></var></span></span> ,&nbsp; <var>σ<sub>k</sub></var><sup>2</sup> = <span class="frac"><span>Σ<sub><var>i</var></sub><var>γ<sub>ik</sub></var>(<var>x<sub>i</sub></var>−<var>μ<sub>k</sub></var>)<sup>2</sup></span><span><var>n<sub>k</sub></var></span></span></div>
+    <p style="margin-bottom:0">収束するまで交互に繰り返す。<b>対数尤度は毎回必ず増加する（単調増加）</b>。</p>
+  </div>
+  <p>NumPy で書くとこれだけ：</p>
+  <pre><code>prob   = w * norm(center, sigma).pdf(data[:, None])   # 重み × 尤度
+z      = prob / prob.sum(axis=1, keepdims=True)      # E step：負担率
+n      = z.sum(axis=0)                                # 各成分の実効データ数
+w      = n / data.size                                # M step：混合比
+center = (z * data[:, None]).sum(axis=0) / n          # M step：重み付き平均
+sigma  = np.sqrt((z * (data[:, None] - center)**2).sum(axis=0) / n)</code></pre>
+
+  <div class="card warm">
+    <h4>EM法の弱点：初期値依存性</h4>
+    <p style="margin-bottom:0">対数尤度は単調増加するが、たどり着くのは<b>局所最適解</b>。初期値によって違う答えに収束する。対策は ① K-means の結果で初期化する ② 複数の初期値で走らせて尤度が最大のものを採用する。</p>
+  </div>
+
+  <h3>クラスタ数 <var>K</var> の決め方</h3>
+  <ul>
+    <li>WAIC / BIC / 交差検証で比較する（→ 第10章）</li>
+    <li><b>多すぎる</b>：過学習。1つの山を無理に2つに割り、意味のないクラスタができる。計算も重くなる</li>
+    <li><b>少なすぎる</b>：複数の山を1つで表そうとして平均が谷間に来る（表現力不足）</li>
+    <li>そもそも各クラスタが本当に正規分布かは別問題。裾が重いなら <var>t</var> 分布混合などを検討する</li>
+  </ul>
+
+  <div class="tw"><table>
+    <tr><th style="width:120px"></th><th>EM 法</th><th>MCMC（ギブスサンプリング）</th></tr>
+    <tr><th>得られるもの</th><td>パラメータの<b>1点</b>（点推定）</td><td>パラメータの<b>事後分布そのもの</b></td></tr>
+    <tr><th>速度</th><td>速い</td><td>遅い</td></tr>
+    <tr><th>局所解</th><td>陥りやすい（初期値依存）</td><td>乱数で探索するので陥りにくい</td></tr>
+    <tr><th>不確実性</th><td>わからない</td><td>信用区間として出せる</td></tr>
+    <tr><th>使い分け</th><td>リアルタイム性が要る／データが大量</td><td>不確実性の評価が要る／意思決定に使う</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 6 ============ -->
+<section id="s6">
+  <h2>6. MCMC</h2>
+
+  <h3>何のためにやるのか</h3>
+  <p>共役でない分布では、事後分布の正規化定数 <var>p</var>(<var>D</var>) = ∫<var>p</var>(<var>D</var>|<var>θ</var>)<var>p</var>(<var>θ</var>)d<var>θ</var> が手計算できない。<br>
+  しかし MCMC は<b>「比」しか使わない</b>ので、正規化されていない <var>f</var>(<var>θ</var>) = <var>p</var>(<var>D</var>|<var>θ</var>)<var>p</var>(<var>θ</var>) だけ分かっていればサンプリングできる。</p>
+  <div class="eq"><span class="frac"><span><var>p</var>(<var>q</var><sub>*</sub>)</span><span><var>p</var>(<var>q<sub>j</sub></var>)</span></span> = <span class="frac"><span><var>f</var>(<var>q</var><sub>*</sub>)</span><span><var>f</var>(<var>q<sub>j</sub></var>)</span></span> &nbsp;&nbsp;← 正規化定数が分母分子で消える</div>
+
+  <h3>メトロポリス・ヘイスティングス法</h3>
+  <div class="card acc">
+    <ol style="margin:0">
+      <li><b>初期値</b> <var>q</var><sub>0</sub> を適当に決める</li>
+      <li><b>次の候補</b>：前の <var>q<sub>j</sub></var> の近くの点を選ぶ &nbsp;<var>q</var><sub>*</sub> = <var>q<sub>j</sub></var> + <var>δ</var>（<var>δ</var> は提案分布から）</li>
+      <li><b>比を計算</b>：<var>η</var> = <var>f</var>(<var>q</var><sub>*</sub>) / <var>f</var>(<var>q<sub>j</sub></var>)</li>
+      <li><b>採用判定</b>：<var>r</var> ∼ Uniform(0, 1) を引き、<var>η</var> ≥ 1 なら無条件採用。<var>η</var> &lt; 1 なら確率 <var>η</var> で採用</li>
+      <li>採用なら <var>q</var><sub><var>j</var>+1</sub> = <var>q</var><sub>*</sub>、不採用なら候補を選び直す</li>
+    </ol>
+  </div>
+  <ul>
+    <li><b>なぜ確率の低い候補も受け入れるのか</b>：常に良い方だけに動くと山を登り切って局所解から出られない。確率的に悪い方にも動くから、分布全体の形をサンプルできる。</li>
+    <li><b>バーンイン</b>：最初のサンプルは初期値の影響が残っているので捨てる。</li>
+    <li><b>提案分布の幅</b>：狭すぎると動かない（サンプル同士の相関が高く非効率）、広すぎると全部却下される。採択率2〜4割が目安。</li>
+  </ul>
+
+  <h3>ギブスサンプリング</h3>
+  <p>多変数のとき、<b>1つの変数だけを、他を固定した条件付き分布から引く</b>のを順番に繰り返す。条件付き分布が共役で簡単に書ける場合（混合正規分布など）に強い。採択・却下の判定がなく必ず受け入れる。</p>
+
+  <h3>収束の確認</h3>
+  <div class="tw"><table>
+    <tr><th style="width:160px">指標</th><th>見方</th></tr>
+    <tr><td>trace plot</td><td>複数チェーンが同じ帯域で毛虫状に混ざっていれば OK。トレンドが残っていたら未収束</td></tr>
+    <tr><td><var>R̂</var>（R-hat）</td><td>複数チェーンが同じ分布に収束しているかを分散の比で見る。<b>1.0 に近ければ OK</b>（1.01 未満が目安）</td></tr>
+    <tr><td>ESS（有効サンプルサイズ）</td><td>自己相関を除いた実質的なサンプル数</td></tr>
+    <tr><td>MCSE</td><td>モンテカルロ標準誤差。シミュレーション回数が足りているかの指標</td></tr>
+    <tr><td>divergences</td><td>事後分布に急な谷があってサンプラーが足を取られた状態。再パラメータ化・<code>target_accept</code> を上げる・事前分布を見直す</td></tr>
+  </table></div>
+</section>
+
+<!-- ============ 7 ============ -->
+<section id="s7">
+  <h2>7. ロジスティック回帰・項目反応理論（IRT）</h2>
+
+  <h3>ロジスティック関数</h3>
+  <div class="eq"><var>σ</var>(<var>z</var>) = <span class="frac"><span>1</span><span>1 + <var>e</var><sup>−<var>z</var></sup></span></span></div>
+  <ul>
+    <li>どんな実数 <var>z</var> ∈ (−∞, ∞) を入れても出力が <b>(0, 1) に収まる</b>ので、そのまま確率として解釈できる。両端で飽和するのでS字型になる。</li>
+    <li><b>ロジスティック回帰</b>：<var>p</var>(<var>y</var>=1|<var>x</var>) = <var>σ</var>(<var>w</var>·<var>x</var> + <var>b</var>)、<var>y</var> ∼ Bernoulli(<var>p</var>)</li>
+    <li><b>線形回帰との違い</b>：線形回帰は出力が実数全体で誤差が正規分布。ロジスティック回帰は出力が 0/1（ベルヌーイ）で、線形な部分は<b>対数オッズ（logit）の側</b>にある。</li>
+    <li><b>ベイズにすると何が嬉しいか</b>：係数が分布で出るので「この変数の効きが 0 をまたぐか」を信用区間で判断できる。予測確率にも不確実性がつく。</li>
+  </ul>
+
+  <h3>項目反応理論（IRT）— 2PL モデル</h3>
+  <p>「誰が・どの問題に・正解したか」の 0/1 表だけから、<b>回答者の能力</b>と<b>問題の性質</b>を同時に推定する。</p>
+  <div class="eq">logit <var>p<sub>ij</sub></var> = <var>η<sub>j</sub></var> ( <var>α<sub>i</sub></var> − <var>β<sub>j</sub></var> ) ,&nbsp;&nbsp; <var>x<sub>ij</sub></var> ∼ Bernoulli(<var>σ</var>(logit <var>p<sub>ij</sub></var>))</div>
+  <div class="tw"><table>
+    <tr><th style="width:80px">記号</th><th style="width:140px">意味</th><th>事前分布と注意</th></tr>
+    <tr><td><var>α<sub>i</sub></var></td><td>回答者 <var>i</var> の<b>能力</b></td><td>𝒩(0, 1)。これは<b>尺度の「定義」</b>なので変えない（平均0・SD1と決めることで能力の物差しを固定している）</td></tr>
+    <tr><td><var>β<sub>j</sub></var></td><td>問題 <var>j</var> の<b>難易度</b></td><td>𝒩(0, <var>σ<sub>β</sub></var>)。<var>α</var> = <var>β</var> のとき正答確率がちょうど 50%</td></tr>
+    <tr><td><var>η<sub>j</sub></var></td><td>問題 <var>j</var> の<b>識別力</b></td><td>HalfNormal(<var>σ<sub>η</sub></var>) ＝ 必ず正。能力差をどれだけ鋭く判別できるか（S字の傾き）</td></tr>
+  </table></div>
+
+  <div class="card acc">
+    <h4>ここが面白いところ</h4>
+    <ul style="margin-bottom:0">
+      <li><b>素点ではなく <var>α</var> を使う理由</b>：同じ素点でも「難しい問題を当てた人」と「易しい問題ばかり当てた人」では能力が違う。IRT は問題の難易度 <var>β</var> と識別力 <var>η</var> を同時に推定して補正する。だから<b>同じ得点でも推定される能力値が異なる</b>。</li>
+      <li><b><var>η</var> が負になったら</b>：能力が高い人ほど間違える異常な項目。設問ミスや選択肢の不備を疑う。だからモデル上は正に制約する。</li>
+      <li><b>3PL モデル</b>（当て推量パラメータを追加）：現実的だがパラメータが増えて推定が不安定になり、大量のデータが必要。</li>
+      <li><b>応用</b>：アダプティブテスト（推定した能力値に応じて次の出題を変える）、資格試験の回次間の難易度調整。</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ 8 ============ -->
+<section id="s8">
+  <h2>8. 重回帰・多重共線性・変数選択</h2>
+
+  <h3>変数を増やすと何が起きるか</h3>
+  <ul>
+    <li>訓練データへの当てはまり（R<sup>2</sup>）は<b>必ず良くなる</b>。だが未知データへの予測は悪化する ＝ <b>過学習</b>。</li>
+    <li>だから「R<sup>2</sup> が高いモデル」を選んではいけない。自由度修正済み R<sup>2</sup>、AIC/BIC、WAIC/LOO で比較する。</li>
+  </ul>
+
+  <h3>多重共線性</h3>
+  <p>説明変数どうしが強く相関していると、どちらが効いているのか分離できず、<b>係数の推定が不安定になり、符号が反転することさえある</b>。</p>
+  <div class="card warm">
+    <p style="margin:0"><b>典型例</b>：<var>x</var><sub>1</sub> と <var>x</var><sub>2</sub> に正の相関があり、<var>x</var><sub>2</sub> が <var>y</var> に負の影響を持つとする。<var>x</var><sub>1</sub> 単独で回帰すると、<var>x</var><sub>1</sub> が大きいとき <var>x</var><sub>2</sub> も大きくなって <var>y</var> を押し下げるため、<b><var>x</var><sub>1</sub> の係数が本来より小さく見える</b>。両方入れると <var>x</var><sub>1</sub> の真の効果が出てくる。<br>
+    <span style="color:var(--sub);font-size:13.5px">→ 「単回帰と重回帰で係数が大きく変わったら、変数間の相関を疑う」</span></p>
+  </div>
+
+  <h3>変数選択の基準</h3>
+  <ul>
+    <li><b>予測性能</b>：WAIC / LOO / 交差検証</li>
+    <li><b>解釈しやすさ</b>：意思決定に使うなら、少数の変数で説明できる方が価値が高い</li>
+    <li><b>実務上の入手可能性</b>：測るのにコストがかかる変数は落とす</li>
+  </ul>
+  <div class="point">モデル比較の表で「全変数モデルが1位」と出ても、<b>順位だけを見ない</b>。差が標準誤差の範囲に収まっているなら「差はない」と判断し、その場合は<b>シンプルな方を選ぶ</b>（オッカムの剃刀）。</div>
+
+  <h3>その他の実務論点</h3>
+  <ul>
+    <li><b>欠損値</b>：削除するとサンプルが減りバイアスが入る。平均・中央値補完は分散を過小評価する。ベイズなら欠損自体を確率変数として推定できる。</li>
+    <li><b>標準化</b>：係数のスケールを揃えて比較可能にする。パラメータの尺度が揃うので MCMC の収束も良くなる。</li>
+    <li><b>係数が「分布」で出る利点</b>：信用区間が 0 をまたぐかどうかで、<var>p</var> 値なしに効果の有無を判断できる。</li>
+    <li><b>データが少ないとき</b>：弱情報事前分布を入れる。スパースモデリング（ラプラス事前や horseshoe 事前）で不要な係数を 0 に寄せる。</li>
+  </ul>
+</section>
+
+<!-- ============ 9 ============ -->
+<section id="s9">
+  <h2>9. 変化点検出・ガウス過程・ベイズ最適化</h2>
+
+  <h3>変化点検出モデル</h3>
+  <p><b>状況</b>：1日ごとの件数データがあり、後半の方が増えている気がする。本当に増えているのか？</p>
+  <p><b>仮説</b>：ある日 <var>t</var> の件数 <var>x<sub>t</sub></var> は平均 <var>μ<sub>t</sub></var> のポアソン分布に従い、ある日 <var>d</var> を中心に <var>μ<sub>A</sub></var> から <var>μ<sub>B</sub></var> へ変化する。</p>
+  <div class="eq"><var>μ<sub>t</sub></var> = <var>μ<sub>A</sub></var> + (<var>μ<sub>B</sub></var> − <var>μ<sub>A</sub></var>) · <var>σ</var>( <var>a</var>(<var>t</var> − <var>d</var>) )</div>
+  <ul>
+    <li><var>d</var> ＝ 変化点、<var>a</var> ＝ 変化の急激さ（<var>a</var> が大きいほど階段状、小さいほどじわじわ）</li>
+    <li>シグモイドを使うと<b>「突然の変化」も「じわじわの変化」も同じ式で表せる</b>。単純な階段関数（<code>where</code> による分岐）は急変専用。</li>
+    <li><b>変化点の数</b>（0個／1個／2個…）を変えたモデルを作り、WAIC で比較するのが定石</li>
+    <li>変化点が複数あるときは<b>順序制約（ordered transform）</b>を入れる。入れないと <var>d</var><sub>1</sub> と <var>d</var><sub>2</sub> が入れ替わって収束しない（ラベルスイッチング）</li>
+  </ul>
+  <p><b>ポアソン分布を使う理由</b>：回数データ（非負整数）だから。ただし<b>平均＝分散</b>という強い仮定があるので、ばらつきが大きい（過分散）なら負の二項分布などに拡張する。</p>
+
+  <h3>ガウス過程（ガウシアンプロセス）</h3>
+  <ul>
+    <li><b>考え方</b>：パラメータではなく<b>関数そのものに事前分布</b>を置く。「どんな形かは決めないが、滑らかであってほしい」という仮定だけを与える。</li>
+    <li><b>カーネル関数 <var>k</var>(<var>x</var>, <var>x</var>′)</b> が「入力が近ければ出力も近い」という仮定を数式にしたもの。<b>カーネルの選択＝モデルの仮定の選択</b>。
+      <ul>
+        <li>RBF（ガウシアン）：非常に滑らか</li>
+        <li>Matérn：ギザギザを許容（現実のデータ向き）</li>
+        <li>周期カーネル：季節変動など繰り返しがある場合</li>
+      </ul>
+    </li>
+    <li><b>出力が「帯」になる</b>：予測が平均 ± 不確実性で出る。データが密な領域では帯が細く、データがない領域では帯が広がる。この<b>「わからなさが見える」</b>ことが最大の利点。単なる閾値判定と違い、変化が有意かどうかを確率で言える。</li>
+    <li><b>弱点</b>：計算量が <var>O</var>(<var>n</var><sup>3</sup>)。大規模データは誘導点法などで近似する。</li>
+  </ul>
+
+  <h3>ベイズ最適化</h3>
+  <p>ガウス過程の予測（平均＋不確実性）を使って<b>「次にどこを試すか」</b>を決める。<br>
+  「今わかっている期待値が高い点（<b>活用</b>）」と「まだ分かっていない不確実な点（<b>探索</b>）」のバランスを取る。</p>
+  <div class="point">同じ発想がバンディット問題にもある。<b>UCB（信頼区間の上限）</b>は、推定した期待値に「不確実性の大きさ」を上乗せした値で候補を比べる。試行回数が少ない選択肢ほど上乗せ分が大きくなるので、初期段階では自動的に探索が優先される。<b>トンプソンサンプリング</b>は事後分布から値をサンプルし、それが最大の選択肢を選ぶ。分布そのものを使うぶん、不確実性が自然に反映される。<br>
+  環境が途中で変わる場合は、古いデータの重みを下げる<b>割引率</b>や<b>スライディングウィンドウ</b>（直近のデータのみ使う）を導入する。</div>
+</section>
+
+<!-- ============ 10 ============ -->
+<section id="s10">
+  <h2>10. モデル比較・WAIC</h2>
+
+  <h3>WAIC の定義</h3>
+  <div class="card">
+    <p style="margin-top:0">前提：モデル <var>p</var>(<var>x<sub>i</sub></var>|<var>θ</var>)、事前分布 <var>p</var>(<var>θ</var>)、データ <var>D</var> = {<var>x</var><sub>1</sub>,…,<var>x<sub>n</sub></var>}。<br>
+    MCMC で事後分布からサンプル <var>Q</var> = {<var>q</var><sub>1</sub>,…,<var>q<sub>m</sub></var>} を得る。</p>
+    <p><b>データごとの一般化対数尤度</b>（サンプルで近似）：</p>
+    <div class="eq"><var>E<sub>i</sub></var> = ∫ <var>p</var>(<var>θ</var>|<var>D</var>) log <var>p</var>(<var>x<sub>i</sub></var>|<var>θ</var>) d<var>θ</var> ≈ <span class="frac"><span>1</span><span><var>m</var></span></span> Σ<sub><var>j</var>=1</sub><sup><var>m</var></sup> log <var>p</var>(<var>x<sub>i</sub></var>|<var>q<sub>j</sub></var>)</div>
+    <p><b>当てはまりの良さ</b>（大きいほど良い）：</p>
+    <div class="eq"><var>L</var> = <span class="frac"><span>1</span><span><var>n</var></span></span> Σ<sub><var>i</var>=1</sub><sup><var>n</var></sup> <var>E<sub>i</sub></var></div>
+    <p><b>推定のばらつき</b>（小さいほど良い）：</p>
+    <div class="eq"><var>V</var> = <span class="frac"><span>1</span><span><var>n</var></span></span> Σ<sub><var>i</var></sub> <span class="frac"><span>1</span><span><var>m</var></span></span> Σ<sub><var>j</var></sub> [ log <var>p</var>(<var>x<sub>i</sub></var>|<var>q<sub>j</sub></var>) − <var>E<sub>i</sub></var> ]<sup>2</sup></div>
+    <div class="eq" style="font-size:20px"><b>WAIC = −( <var>L</var> − <var>V</var> )</b> &nbsp;&nbsp;<span style="font-size:14px">← 小さいほど良い</span></div>
+    <p style="margin-bottom:0">意味：<b>尤度 <var>L</var> が大きく、パラメータによるばらつき <var>V</var> が小さいほど良いモデル</b>。<var>V</var> が「実質的なパラメータ数（複雑さのペナルティ）」として働き、全体が<b>汎化損失</b>（テストデータに対する損失）の近似になっている。</p>
+  </div>
+  <p>WAIC の凄さは、<b>真の分布が分からなくても、手元の事後分布のサンプルだけから「未知データへの予測の良さ」を導き出せる</b>ところ。</p>
+
+  <h3>他の指標との比較</h3>
+  <div class="tw"><table>
+    <tr><th style="width:130px">指標</th><th>特徴</th><th>使いどころ</th></tr>
+    <tr><td>WAIC</td><td>事後分布のサンプルから汎化損失を数学的に導出。ただしサンプルが独立に生成されている等の仮定に依存</td><td>ベイズ・階層モデルの標準</td></tr>
+    <tr><td>LOO-CV</td><td>実際に1個抜いて評価する力技。モデルの前提が多少崩れても頑健</td><td>データが少ない／WAICの仮定が怪しいとき（PSIS-LOOで近似）</td></tr>
+    <tr><td><var>k</var>分割CV</td><td>LOOCV は計算コストが高いので、実務では5分割・10分割</td><td>データが大量にあるとき</td></tr>
+    <tr><td>AIC / BIC</td><td>最尤推定ベース。パラメータ数を直接数える</td><td>階層モデルでは「実質的なパラメータ数」が数えられないので不向き</td></tr>
+    <tr><td>周辺尤度／ベイズファクター</td><td>モデル自体の確率を比較</td><td>事前分布に敏感なので注意</td></tr>
+  </table></div>
+
+  <div class="card hot">
+    <h4>過学習の罠</h4>
+    <p style="margin-bottom:0">グラフの見た目が<b>「綺麗にデータを通っている」としても、それは過学習しているだけ</b>で、WAIC は「汎化性能は最悪だ」と警告してくることがある。さらに「事後分布が狭い＝推定値に自信満々」であっても、そもそも仮定したモデルの形自体が現実と違えば意味がない。<b>見た目の当てはまり ≠ 汎化性能</b>。</p>
+  </div>
+</section>
+
+<!-- ============ 11 ============ -->
+<section id="s11">
+  <h2>11. チートシート</h2>
+
+  <h3>分布の要約</h3>
+  <div class="tw"><table>
+    <tr><th style="width:190px">分布</th><th>平均</th><th>最頻値（モード）</th><th>分散</th></tr>
+    <tr><td>Beta(<var>α</var>, <var>β</var>)</td><td><span class="frac"><span><var>α</var></span><span><var>α</var>+<var>β</var></span></span></td><td><span class="frac"><span><var>α</var>−1</span><span><var>α</var>+<var>β</var>−2</span></span> （<var>α</var>,<var>β</var> &gt; 1）</td><td><span class="frac"><span><var>αβ</var></span><span>(<var>α</var>+<var>β</var>)<sup>2</sup>(<var>α</var>+<var>β</var>+1)</span></span></td></tr>
+    <tr><td>Gamma(<var>α</var>, <var>β</var>)</td><td><span class="frac"><span><var>α</var></span><span><var>β</var></span></span></td><td><span class="frac"><span><var>α</var>−1</span><span><var>β</var></span></span> （<var>α</var> ≥ 1）</td><td><span class="frac"><span><var>α</var></span><span><var>β</var><sup>2</sup></span></span></td></tr>
+    <tr><td>Dirichlet(<var>α</var>)</td><td><span class="frac"><span><var>α<sub>k</sub></var></span><span>Σ<var>α</var></span></span></td><td><span class="frac"><span><var>α<sub>k</sub></var>−1</span><span>Σ<var>α</var>−<var>K</var></span></span></td><td>—</td></tr>
+    <tr><td>Binomial(<var>n</var>, <var>q</var>)</td><td><var>nq</var></td><td>⌊(<var>n</var>+1)<var>q</var>⌋ 付近</td><td><var>nq</var>(1−<var>q</var>)</td></tr>
+    <tr><td>𝒩(<var>μ</var>, <var>τ</var>)&nbsp;<span style="color:var(--hot)">※<var>τ</var>=精度</span></td><td><var>μ</var></td><td><var>μ</var></td><td>1 / <var>τ</var></td></tr>
+    <tr><td>Poisson(<var>λ</var>)</td><td><var>λ</var></td><td>⌊<var>λ</var>⌋</td><td><var>λ</var>（＝平均）</td></tr>
+  </table></div>
+
+  <h3>この分野の一行まとめ</h3>
+  <div class="card acc">
+    <p style="margin:0;font-size:16px"><b>ベイズ推定は「持っている分布を、データの方へ少しずつ動かす」作業の繰り返し</b></p>
+    <p style="margin-bottom:0">式が複雑に見えても、実際にやっているのは<b>分布のパラメータ（平均・精度・カウント）を更新すること</b>だけ。どれだけ動くかは、事前とデータそれぞれの「自信の強さ」の比で決まる。データが増えるほど事前の影響は薄れていく。</p>
+  </div>
+</section>
+
+<!-- ============ 12 ============ -->
+<section id="s12">
+  <h2>12. 演習問題</h2>
+  <p class="sec-note">自分で作った確認用。手を動かして解いてから答えを見る。</p>
+
+  <div class="qbox"><div class="qhd">問1 — 二項 × ベータ</div><div class="qbody">
+    当たり確率 <var>m</var> が分からないくじを 5 回引いたところ、2 回当たった。事前分布を一様分布としたときの事後分布・平均・最頻値を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    一様分布 = Beta(1,1)。事後 = Beta(1+2, 1+3) = <b>Beta(3, 4)</b>。<br>
+    平均 = 3/7 ≈ <b>0.429</b>、最頻値 = 2/5 = <b>0.4</b>（＝観測比率 2/5 と一致。一様事前のときは最頻値＝最尤推定値になる）。
+  </div>
+
+  <div class="qbox"><div class="qhd">問2 — 順序指定の尤度</div><div class="qbody">
+    当たり確率 <var>m</var> のくじを 5 回引いて、<b>2 回目と 5 回目だけ</b>当たった。このデータに対する尤度を <var>m</var> の式で書け。また「5 回引いて 2 回当たった」場合の尤度と比べて何が違うか述べよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    外れ・当たり・外れ・外れ・当たり の順と指定されているので組み合わせは1通り。<br>
+    <b><var>p</var>(<var>D</var>|<var>m</var>) = <var>m</var><sup>2</sup>(1−<var>m</var>)<sup>3</sup></b>（<b>二項係数は付かない</b>）。<br>
+    「5 回引いて 2 回当たった」なら順序を問わないので組み合わせが <sub></sub><var>5</var>C<var>2</var> = 10 通りあり、<sub></sub><var>5</var>C<var>2</var> <var>m</var><sup>2</sup>(1−<var>m</var>)<sup>3</sup> となる。<br>
+    <span style="color:var(--sub);font-size:13.5px">事後分布を求めるだけなら定数倍は ∝ に吸収されるので結果は同じ。ただし「尤度を書け」と問われたときは区別する。</span>
+  </div>
+
+  <div class="qbox"><div class="qhd">問3 — 正規 × 正規</div><div class="qbody">
+    <var>p</var>(<var>x</var>|<var>μ</var>) = 𝒩(<var>x</var>|<var>μ</var>, 2)、事前 <var>p</var>(<var>μ</var>) = 𝒩(<var>μ</var>|0, 1)。<var>x</var> = 6 を観測したときの事後分布を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    事後精度 = 1 + 2 = 3、事後平均 = (1·0 + 2·6)/3 = 4。<b>𝒩(<var>μ</var> | 4, 3)</b>。<br>
+    <span style="color:var(--sub);font-size:13.5px">検算：log事前 = −0.5<var>μ</var>²、log尤度 = −(2/2)(6−<var>μ</var>)² = −<var>μ</var>²+12<var>μ</var>+<var>C</var>。和 = −1.5<var>μ</var>²+12<var>μ</var> = −1.5(<var>μ</var>−4)²+<var>C</var> ✓</span>
+  </div>
+
+  <div class="qbox"><div class="qhd">問4 — 正規 × ガンマ</div><div class="qbody">
+    <var>p</var>(<var>x</var>|<var>τ</var>) = 𝒩(<var>x</var>|20, <var>τ</var>)、事前 <var>p</var>(<var>τ</var>) = Gamma(<var>τ</var> | 1, 1)。<var>D</var> = {16, 24} を観測した。事前の平均・事後分布・事後の平均を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    事前平均 = 1/1 = <b>1</b>。<br>
+    Σ(<var>x<sub>i</sub></var>−20)² = (−4)² + 4² = 32、<var>n</var> = 2。<br>
+    尤度 ∝ <var>τ</var><sup>1</sup><var>e</var><sup>−16<var>τ</var></sup>、事前 ∝ <var>τ</var><sup>0</sup><var>e</var><sup>−<var>τ</var></sup>。掛けて <var>τ</var><sup>1</sup><var>e</var><sup>−17<var>τ</var></sup>：<br>
+    事後 = Gamma(1 + 1, &nbsp;1 + 16) = <b>Gamma(2, 17)</b>。<br>
+    事後平均 = 2/17 ≈ <b>0.118</b>（精度が下がった＝ばらつきが大きいと学習した。分散 ≈ 8.5、標準偏差 ≈ 2.9 で、データが 20 から ±4 ずれていることと整合する）。
+  </div>
+
+  <div class="qbox"><div class="qhd">問5 — ポアソン × ガンマ</div><div class="qbody">
+    Poisson(<var>λ</var>) に従うデータを 4 日観測して {3, 5, 4, 4} だった。事前を Gamma(1, 1) としたときの事後分布と事後平均を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    Σ<var>x<sub>i</sub></var> = 16、<var>n</var> = 4。事後 = Gamma(1+16, 1+4) = <b>Gamma(17, 5)</b>。事後平均 = 17/5 = <b>3.4</b>。<br>
+    <span style="color:var(--sub);font-size:13.5px">データの平均は 4。事前 Gamma(1,1)（平均1）に少し引っ張られて 3.4 になっている。</span>
+  </div>
+
+  <div class="qbox"><div class="qhd">問6 — ディリクレ</div><div class="qbody">
+    4 種類のカテゴリを 30 件観測し、(12, 8, 6, 4) 件だった。事前を Dir(1,1,1,1) としたときの事後分布と第1カテゴリの事後平均を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    事後 = <b>Dir(13, 9, 7, 5)</b>。Σ<var>α</var> = 34。第1カテゴリの事後平均 = <b>13/34 ≈ 0.382</b>（単純比率 12/30 = 0.4 よりわずかに均等寄り）。
+  </div>
+
+  <div class="qbox"><div class="qhd">問7 — EM法の1ステップ</div><div class="qbody">
+    2成分の混合正規分布で、現在のパラメータが <var>w</var> = (0.5, 0.5)、<var>μ</var> = (0, 4)、<var>σ</var> = (1, 1) である。データ <var>x</var> = 1 に対する E ステップの負担率 <var>γ</var><sub>1</sub>, <var>γ</var><sub>2</sub> を求めよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    <div class="eq"><var>γ</var><sub>1</sub> = <span class="frac"><span>0.5·𝒩(1|0,1)</span><span>0.5·𝒩(1|0,1) + 0.5·𝒩(1|4,1)</span></span></div>
+    𝒩(1|0,1) ∝ <var>e</var><sup>−1/2</sup> ≈ 0.607、𝒩(1|4,1) ∝ <var>e</var><sup>−9/2</sup> ≈ 0.011。<br>
+    <var>γ</var><sub>1</sub> ≈ 0.607/(0.607+0.011) ≈ <b>0.982</b>、<var>γ</var><sub>2</sub> ≈ <b>0.018</b>。<b>成分1に強く属する</b>。<br>
+    <span style="color:var(--sub);font-size:13.5px">M ステップではこの <var>γ</var> を重みにして <var>μ</var>, <var>σ</var>, <var>w</var> を更新する。</span>
+  </div>
+
+  <div class="qbox"><div class="qhd">問8 — MH法の採択判定</div><div class="qbody">
+    現在の点で <var>f</var>(<var>q<sub>j</sub></var>) = 0.4、候補で <var>f</var>(<var>q</var><sub>*</sub>) = 0.3 である。<br>
+    (1) 比 <var>η</var> を求めよ。 (2) 一様乱数 <var>r</var> = 0.6 のとき採用されるか。 (3) 正規化定数を計算しなくてよい理由を述べよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    (1) <var>η</var> = 0.3/0.4 = <b>0.75</b>。<br>
+    (2) <var>η</var> &lt; 1 なので確率 0.75 で採用。<var>r</var> = 0.6 &lt; 0.75 なので<b>採用</b>。<br>
+    (3) 判定に使うのは <var>p</var>(<var>q</var><sub>*</sub>)/<var>p</var>(<var>q<sub>j</sub></var>) という<b>比</b>だけで、両方に同じ正規化定数が掛かっているため分母分子で打ち消し合う。だから <var>f</var>(<var>θ</var>) = <var>p</var>(<var>D</var>|<var>θ</var>)<var>p</var>(<var>θ</var>) が分かっていれば十分。
+  </div>
+
+  <div class="qbox"><div class="qhd">問9 — IRT</div><div class="qbody">
+    2PL モデル logit <var>p<sub>ij</sub></var> = <var>η<sub>j</sub></var>(<var>α<sub>i</sub></var> − <var>β<sub>j</sub></var>) について、<br>
+    (1) <var>α<sub>i</sub></var> = <var>β<sub>j</sub></var> のとき正答確率はいくらか。<br>
+    (2) <var>η<sub>j</sub></var> = 2, <var>α<sub>i</sub></var> = 1.0, <var>β<sub>j</sub></var> = 0.5 のときの正答確率を求めよ。<br>
+    (3) 同じ素点の2人でも推定される能力 <var>α</var> が異なることがある。その理由を述べよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    (1) logit = 0 なので <var>σ</var>(0) = <b>0.5</b>。つまり <var>β</var> は「正答率が50%になる能力値」＝難易度の定義そのもの。<br>
+    (2) logit = 2(1.0 − 0.5) = 1.0、<var>p</var> = 1/(1+<var>e</var><sup>−1</sup>) ≈ <b>0.731</b>。<br>
+    (3) IRT は<b>どの問題に正解したか</b>を見ている。難易度 <var>β</var> の高い問題を当てた人は同じ素点でも能力 <var>α</var> が高く推定される。識別力 <var>η</var> が高い問題での正誤ほど推定に強く効く。
+  </div>
+
+  <div class="qbox"><div class="qhd">問10 — WAIC</div><div class="qbody">
+    WAIC の定義式を示し、<var>L</var> と <var>V</var> がそれぞれ何を表しているか、WAIC が小さいほど良いとされる理由を説明せよ。
+  </div></div>
+  <div class="ans"><span class="lb">解答</span>
+    WAIC = −(<var>L</var> − <var>V</var>)。<var>L</var> は事後分布のサンプルで平均した対数尤度＝<b>データへの当てはまりの良さ</b>、<var>V</var> は対数尤度の分散＝<b>パラメータの違いによる予測のばらつき（＝モデルの実質的な複雑さ）</b>。<br>
+    当てはまりが良く（<var>L</var> 大）、かつばらつきが小さい（<var>V</var> 小）ほど −(<var>L</var>−<var>V</var>) は小さくなる。これは<b>汎化損失（未知データに対する損失）の近似</b>になっているため、小さいほど予測性能が良いモデルと判断できる。<var>V</var> が過学習へのペナルティとして働く。
+  </div>
+</section>
+
+<!-- ============ 13 ============ -->
+<section id="s13">
+  <h2>13. つまずきどころ</h2>
+  <ul class="check">
+    <li><b><var>τ</var> は精度で、分散ではない</b>（分散 = 1/<var>τ</var>）。問題文の定義を最初に確認する</li>
+    <li><b>順序が指定された尤度に二項係数を付けない</b></li>
+    <li>ベイズの定理の証明では<b>「分母は <var>θ</var> に依存しない定数だから」</b>を必ず書く。これがないと ∝ の理由を説明したことにならない</li>
+    <li>Beta の最頻値は (<var>α</var>−1)/(<var>α</var>+<var>β</var>−2)、平均は <var>α</var>/(<var>α</var>+<var>β</var>)。<b>混同しやすい</b></li>
+    <li>Gamma の平均は <var>α</var>/<var>β</var>、最頻値は (<var>α</var>−1)/<var>β</var></li>
+    <li>グラフを描くときは<b>軸のラベル・中心の値・事前より尖ったこと</b>の3点を入れる</li>
+    <li>グラフィカルモデルは<b>超パラメータをプレートの外</b>に、観測変数は四角</li>
+    <li>正規分布の計算は<b>まず log を取る</b>。掛け算のまま処理しようとしない</li>
+    <li>モデル比較は順位だけを見ない。<b>差が誤差範囲ならシンプルな方</b></li>
+    <li>「見た目の当てはまりが良い」は過学習のサインかもしれない</li>
+  </ul>
+</section>
+
+<footer>
+  <p>工学院大学 情報科学科で学んだベイズ統計・予測モデリングの内容を、自分用に整理したノートです。数値例・演習問題はすべて自作。講義資料や試験問題は含んでいません。</p>
+  <p>誤りを見つけたら <a href="https://github.com/Qoo-006/school">GitHub</a> の Issue へ。／ 平松瑠希</p>
+</footer>
+
+</main>
+</div>
+</body>
+</html>
