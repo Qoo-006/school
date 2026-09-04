@@ -12,6 +12,7 @@
 |------|--------|------|-------|
 | **情報科学セミナーⅠ**<br>（経営情報システム研究室／三木研） | [BVH動作解析](seminar-1/bvh-motion/) | レポート + 発表PPTX | [→](https://qoo-006.github.io/school/seminar-1/bvh-motion/) |
 | | [飲料戦略分析](seminar-1/beverage/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/beverage/) |
+| | [八王子 中古マンション価格分析](seminar-1/hachioji-mansion/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/hachioji-mansion/) |
 | **予測モデリング** | [ベイズ統計 学習ノート](predictive-modeling/bayes/) | 学習ノート | [→](https://qoo-006.github.io/school/predictive-modeling/bayes/) |
 
 ---
@@ -25,7 +26,8 @@ school/
 │
 ├── seminar-1/                  ← 情報科学セミナーⅠ
 │   ├── bvh-motion/             ← BVH動作解析（index.html + データ + 解析スクリプト + PPTX）
-│   └── beverage/               ← 飲料戦略分析（単一HTML・自己完結）
+│   ├── beverage/               ← 飲料戦略分析（単一HTML・自己完結）
+│   └── hachioji-mansion/       ← 八王子 中古マンション価格分析（index.html + 図版PNG）
 │
 └── predictive-modeling/        ← 予測モデリング
     └── bayes/                  ← ベイズ統計 学習ノート（単一HTML・自己完結）

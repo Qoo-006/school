@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>八王子 中古マンション価格分析 — 情報科学セミナーI</title>
+<style>
+  :root{
+    --blue:#4A90E2; --orange:#E8663D; --green:#2E7D32; --ink:#1f2933; --sub:#5b6b7a;
+    --line:#e3e8ee; --bg:#f7f9fc; --card:#ffffff; --accent:#0b5cad;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
+    line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+  header{background:linear-gradient(135deg,#0b5cad,#4A90E2);color:#fff;padding:48px 20px 40px;margin-bottom:0}
+  header .inner{max-width:960px;margin:0 auto}
+  header h1{margin:0 0 6px;font-size:26px;letter-spacing:.02em}
+  header .meta{opacity:.9;font-size:14px}
+  .draft{display:inline-block;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.5);
+    border-radius:999px;padding:2px 12px;font-size:12px;margin-bottom:14px}
+  h2{font-size:20px;margin:44px 0 14px;padding-left:12px;border-left:5px solid var(--accent)}
+  h3{font-size:16px;margin:26px 0 8px;color:var(--accent)}
+  p{margin:10px 0}
+  .lead{font-size:15px;color:var(--sub)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px 22px;margin:16px 0;
+    box-shadow:0 1px 3px rgba(20,40,80,.04)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:680px){.grid2{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left}
+  th{background:#eef4fb;font-weight:600}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  figure{margin:18px 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+  figure img{max-width:100%;height:auto;border-radius:6px}
+  figcaption{font-size:13px;color:var(--sub);margin-top:8px}
+  .callout{border-radius:10px;padding:14px 18px;margin:16px 0;font-size:14.5px}
+  .callout.key{background:#eafaf0;border:1px solid #bfe6cd}
+  .callout.warn{background:#fff5e9;border:1px solid #ffd9a8}
+  .callout.q{background:#eef2fb;border:1px solid #c9d6f2}
+  .callout b{color:var(--ink)}
+  .up{color:var(--green);font-weight:700}
+  .down{color:var(--orange);font-weight:700}
+  .tag{display:inline-block;font-size:12px;background:#eef4fb;border:1px solid #d3e2f4;color:#2c5a8c;
+    border-radius:6px;padding:1px 8px;margin-right:6px}
+  ul{margin:8px 0 8px 2px;padding-left:20px}
+  li{margin:4px 0}
+  .foot{margin-top:40px;font-size:12.5px;color:var(--sub);border-top:1px solid var(--line);padding-top:16px}
+  .src a{color:var(--accent);text-decoration:none;border-bottom:1px dotted #9db8d6}
+
+  /* ===== スクロール開閉ヒーロー ===== */
+  .hero{height:260vh;position:relative;margin-bottom:10px}
+  .hero-stage{position:sticky;top:0;height:100vh;overflow:hidden;background:#12213b}
+  .reveal{position:absolute;inset:0;overflow:hidden;background:#1a0f0c}
+  /* 奥：一点透視の東京ストリート（生成した実写画像） */
+  .skyline{position:absolute;inset:-4% -2%;
+    background:url("reveal_street2.png") center 42%/cover no-repeat;
+    will-change:transform}
+  .skyline::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(130% 80% at 50% 38%,transparent 42%,rgba(16,8,6,.6) 100%)}
+  .hero-title{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;color:#fff;padding:0 24px;opacity:0;transform:scale(.86);will-change:opacity,transform;z-index:3}
+  .hero-title .plate{background:rgba(15,25,45,.72);backdrop-filter:blur(2px);
+    border-radius:22px;padding:22px 30px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+  .hero-title h1{margin:6px 0 4px;font-size:clamp(28px,7vw,52px);line-height:1.15;letter-spacing:.02em}
+  .hero-title p{margin:8px 0 0;font-size:14px;opacity:.9}
+  .hero-title .draft{background:rgba(255,255,255,.18);border-color:rgba(255,255,255,.5)}
+  .scrollcue{margin-top:18px;font-size:13px;letter-spacing:.3em;opacity:.85;animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+  /* 左右のマンション・ファサード */
+  .facade{position:absolute;top:0;bottom:0;width:50.6%;z-index:4;will-change:transform;
+    background-size:cover;background-repeat:no-repeat;box-shadow:0 0 60px rgba(0,0,0,.4)}
+  .facade-l{left:0;transform:translateX(0);background-image:url("facade_L2.png");background-position:right center}
+  .facade-r{right:0;transform:translateX(0);background-image:url("facade_R2.png");background-position:left center}
+  /* 合わせ目の陰影（奥行き）*/
+  .facade-l::after,.facade-r::after{content:"";position:absolute;top:0;bottom:0;width:26px;z-index:5}
+  .facade-l::after{right:0;background:linear-gradient(90deg,transparent,rgba(0,0,0,.5))}
+  .facade-r::after{left:0;background:linear-gradient(270deg,transparent,rgba(0,0,0,.5))}
+  .hero-hint{position:absolute;left:0;right:0;bottom:22px;text-align:center;color:#fff;z-index:6;
+    font-size:12px;letter-spacing:.2em;opacity:.75;mix-blend-mode:difference}
+  @media(prefers-reduced-motion:reduce){.hero{height:100vh}.facade{display:none}.hero-title{opacity:1;transform:none}}
+
+  /* ===== 目的：クリックで開く窓 ===== */
+  .window{position:relative;cursor:pointer;user-select:none;min-height:250px;overflow:hidden;
+    padding:12px;border-radius:6px;perspective:1500px;
+    background:linear-gradient(135deg,#a06a44,#7c4a2c);          /* 木の窓枠 */
+    box-shadow:0 12px 30px rgba(20,40,80,.2),inset 0 0 0 3px rgba(255,255,255,.12)}
+  .win-content{position:absolute;inset:12px;border-radius:3px;padding:26px 28px;overflow:auto;color:#e9f0f8;
+    background:linear-gradient(180deg,#17273f 0%,#101d31 100%);box-shadow:inset 0 0 40px rgba(0,0,0,.4)}
+  .win-content p{color:#dbe6f2;margin:10px 0}
+  .win-content b{color:#fff}
+  .win-content .peeklead{font-size:13px;color:#8fb2d6;margin:0 0 8px;letter-spacing:.08em}
+  /* 観音開きの2枚のガラス扉（十字桟つき）*/
+  .pane{position:absolute;top:12px;bottom:12px;width:calc(50% - 12px);z-index:2;
+    border:5px solid #eef3f8;border-radius:3px;
+    box-shadow:0 0 0 2px #93a6ba, inset 0 0 26px rgba(110,140,175,.4);
+    background:
+      linear-gradient(#eef3f8,#eef3f8) center/6px 100% no-repeat,     /* 縦桟 */
+      linear-gradient(#eef3f8,#eef3f8) center/100% 6px no-repeat,     /* 横桟 */
+      linear-gradient(135deg,#e8f1fa 0%,#c3d7ec 55%,#a9c4de 100%);    /* すりガラス */
+    transition:transform .85s cubic-bezier(.68,0,.14,1);backface-visibility:hidden}
+  .pane::after{content:"";position:absolute;inset:0;pointer-events:none;
+    background:linear-gradient(118deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%)}
+  .pane.left{left:12px;transform-origin:left center}
+  .pane.right{right:12px;transform-origin:right center}
+  /* 取っ手（中央の合わせ目）*/
+  .pane.left::before,.pane.right::before{content:"";position:absolute;top:50%;margin-top:-20px;
+    width:7px;height:40px;border-radius:4px;background:linear-gradient(#5a6b7d,#39424e);box-shadow:0 1px 3px rgba(0,0,0,.4);z-index:3}
+  .pane.left::before{right:7px}
+  .pane.right::before{left:7px}
+  .window.open .pane.left{transform:rotateY(-112deg)}
+  .window.open .pane.right{transform:rotateY(112deg)}
+  .win-frame{display:none}
+  .win-hint{position:absolute;left:0;right:0;bottom:16px;text-align:center;z-index:4;pointer-events:none;
+    font-size:12px;color:#28374a;letter-spacing:.18em;font-weight:700;
+    text-shadow:0 1px 2px rgba(255,255,255,.8);transition:opacity .4s}
+  .window.open .win-hint{opacity:0}
+  /* ===== 目的：シンプルに大きく読ませるカード ===== */
+  .purpose{margin:16px 0 10px;padding:30px 34px;border-radius:16px;
+    background:linear-gradient(180deg,#fbfdff,#eef4fb);border:1px solid #d6e2f2;
+    border-left:8px solid var(--accent);box-shadow:0 8px 22px rgba(20,50,100,.08)}
+  .purpose .plabel{display:inline-block;font-size:15px;font-weight:800;letter-spacing:.06em;
+    color:var(--accent);margin:0 0 16px}
+  .purpose .q{font-size:23px;line-height:1.72;font-weight:700;margin:0 0 18px;color:var(--ink)}
+  .purpose .q b{color:var(--accent)}
+  .purpose .a{font-size:18px;line-height:1.9;margin:0;color:#33414f}
+  .purpose .a b{color:var(--ink);background:linear-gradient(transparent 62%,#ffe7a8 62%)}
+  @media(max-width:560px){.purpose{padding:22px 20px}.purpose .q{font-size:19px}.purpose .a{font-size:16px}}
+  /* ===== 交絡バナー（今回いちばん注意したこと・大きく）===== */
+  .confound{margin:14px 0 28px;padding:26px 30px;border-radius:18px;
+    background:linear-gradient(135deg,#fff4e0 0%,#ffe7c9 100%);border:2px solid #f0a94b;
+    box-shadow:0 12px 28px rgba(200,120,20,.15)}
+  .confound .flag{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:800;letter-spacing:.08em;
+    color:#9a5200;background:#ffd79b;border-radius:999px;padding:6px 15px;margin-bottom:14px}
+  .confound h3{margin:2px 0 12px;font-size:clamp(23px,3.4vw,32px);font-weight:900;color:#7a3d00;line-height:1.35}
+  .confound h3 .big{color:#e8663d}
+  .confound .def{font-size:16.5px;line-height:1.9;color:#5a4225;margin:0 0 18px}
+  .confound .def b{color:#a3410a}
+  .confound .chips{display:flex;flex-wrap:wrap;gap:11px}
+  .confound .chip{background:#fff;border:1.5px solid #f0b866;border-radius:13px;padding:12px 15px;flex:1 1 190px;
+    box-shadow:0 4px 10px rgba(180,110,20,.1)}
+  .confound .chip .t{display:block;font-weight:800;color:#b3510a;font-size:14.5px;margin-bottom:4px}
+  .confound .chip .d{display:block;font-size:12.5px;color:#6a533a;line-height:1.6}
+  @media(max-width:560px){.confound{padding:20px 17px}.confound .chip{flex-basis:100%}}
+  /* ===== 結論カード（最後に答える）===== */
+  .answer{margin:16px 0 10px;padding:30px 34px;border-radius:16px;
+    background:linear-gradient(180deg,#eef7f0,#e1efe7);border:1px solid #bfe0cc;
+    border-left:8px solid var(--green);box-shadow:0 8px 22px rgba(20,90,50,.1)}
+  .answer .plabel{display:inline-block;font-size:15px;font-weight:800;letter-spacing:.06em;color:var(--green);margin:0 0 16px}
+  .answer .qa{margin:0 0 18px}
+  .answer .qa .qq{font-size:16.5px;font-weight:800;color:#215c3a;margin:0 0 5px}
+  .answer .qa .aa{font-size:18px;line-height:1.9;color:#2a3b31;margin:0}
+  .answer .qa .aa b{color:#155c33;background:linear-gradient(transparent 62%,#bfe8cc 62%)}
+  .answer .sum{font-size:15px;color:#3a4a40;line-height:1.85;margin:4px 0 0;padding-top:14px;border-top:1px dashed #b6d5c2}
+  .answer .sum b{color:#155c33}
+  @media(max-width:560px){.answer{padding:22px 20px}.answer .qa .aa{font-size:16px}}
+
+  /* ===== 沿線：左右から組み上がる列車 ===== */
+  .trainwrap{margin:16px 0 6px}
+  .trainwrap .tl{font-size:13px;font-weight:700;margin:10px 2px 4px}
+  .tl.chuo{color:#d84315}.tl.keio{color:#c2185b}
+  /* ===== 実写電車の窓にデータを埋め込む ===== */
+  .railscene{position:relative;overflow:hidden;padding:6px 0 12px}
+  .railscene::after{content:"";position:absolute;left:-12px;right:-12px;bottom:6px;height:5px;border-radius:2px;
+    background:repeating-linear-gradient(90deg,#868e97 0 20px,#c7cdd4 20px 28px)}
+  .railscene::before{content:"";position:absolute;left:-12px;right:-12px;bottom:0;height:4px;background:#7a5230;opacity:.5}
+  .rtrain{position:relative;max-width:940px;margin:0 auto;border-radius:10px;overflow:hidden;z-index:1;
+    box-shadow:0 9px 22px rgba(0,0,0,.24);
+    opacity:0;transform:translateX(-116%);transition:transform 1.05s cubic-bezier(.16,.86,.24,1),opacity .5s}
+  .rtrain.keio{transform:translateX(116%)}
+  .railscene.go .rtrain{transform:translateX(0);opacity:1}
+  .rtrain>img{display:block;width:100%;height:auto}
+  .wov{position:absolute;transform:translate(-50%,-50%);text-align:center;
+    background:rgba(6,12,20,.46);backdrop-filter:blur(1px);border:1px solid rgba(255,255,255,.18);
+    border-radius:9px;padding:5px 3px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .wov .p{display:block;font-weight:800;color:#ffe08a;line-height:1;font-variant-numeric:tabular-nums;
+    text-shadow:0 0 7px rgba(255,190,60,.55)}
+  .wov .u{font-size:9px;color:#d8e0e8;opacity:.9}
+  .wov.hi{border-color:#ffd54f;box-shadow:0 0 0 2px #ffd54f,0 2px 10px rgba(0,0,0,.4)}
+  .wnm{position:absolute;transform:translateX(-50%);white-space:nowrap;font-weight:700;color:#fff;
+    padding:2px 8px;border-radius:20px;box-shadow:0 2px 4px rgba(0,0,0,.28)}
+  .wnm.chuo{background:#ef7c1b}.wnm.keio{background:#cf2069}
+  .tl .lg{font-weight:400;color:var(--sub);font-size:11px}
+  @media(prefers-reduced-motion:reduce){.rtrain{opacity:1;transform:none}}
+
+  /* ===== グラフを列車の窓枠越しに見せる ===== */
+  .winfig{background:linear-gradient(180deg,#e3e7ea,#c4ccd1)!important;border:1px solid #aeb7bf!important;padding:16px 18px 12px!important}
+  .winfig::before{content:none!important}
+  .winfig::after{content:none!important}
+  .winfig.framed{background:transparent!important;border:none!important;box-shadow:none!important;padding:6px 0 2px!important}
+  .framed>img{display:block;width:100%;height:auto;border-radius:20px;box-shadow:0 10px 24px rgba(0,0,0,.22)}
+  .framed .wlabel{margin-bottom:8px}
+  /* 車窓図は文章幅より広く（デフォルトで大きく寄せる） */
+  .winfig.framed{position:relative;left:50%;width:min(1320px,95vw);
+    transform:translateX(-50%) translateY(24px);opacity:0;
+    transition:opacity .7s ease, transform .8s cubic-bezier(.16,.84,.26,1)}
+  .winfig.framed.in{opacity:1;transform:translateX(-50%)}
+  .wlabel.chuo{background:#ef7c1b!important;color:#fff!important;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+  .wlabel.keio{background:#cf2069!important;color:#fff!important;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+  .framed.chuo>img{box-shadow:0 6px 0 -1px #ef7c1b,0 12px 22px rgba(0,0,0,.22)}
+  .framed.keio>img{box-shadow:0 6px 0 -1px #cf2069,0 12px 22px rgba(0,0,0,.22)}
+
+  .twin{position:relative;border:16px solid #17191d;border-radius:24px;overflow:hidden;background:#0c0e11;
+    box-shadow:inset 0 0 0 3px #3b4046,inset 0 0 34px rgba(0,0,0,.55),0 8px 20px rgba(0,0,0,.28)}
+  .twin>img{display:block;width:100%;height:auto;border-radius:4px}
+  .twin .glass{position:absolute;inset:0;pointer-events:none;border-radius:8px;
+    background:linear-gradient(118deg,rgba(255,255,255,.16) 0 20%,rgba(255,255,255,0) 34%,rgba(255,255,255,0) 64%,rgba(255,255,255,.09) 86%)}
+  .twin .rivet{position:absolute;width:7px;height:7px;border-radius:50%;background:#2a2e33;box-shadow:inset 0 1px 1px rgba(255,255,255,.25);z-index:2}
+  .twin .rivet.tl{top:6px;left:6px}.twin .rivet.tr{top:6px;right:6px}.twin .rivet.bl{bottom:6px;left:6px}.twin .rivet.br{bottom:6px;right:6px}
+  .winfig .tstripe{height:7px;border-radius:4px;margin:12px 6px 0;
+    background:linear-gradient(90deg,#ef7c1b 0 50%,#1f3a93 50% 78%,#e5007e 78% 100%)}
+  .winfig .wlabel{display:inline-block;margin:0 0 12px;font-size:12px;font-weight:700;color:#33404d;
+    background:#cfd6db;border-radius:20px;padding:3px 12px;box-shadow:inset 0 0 0 1px #b3bcc4}
+
+  /* ===== グラフも列車のように左右からレールで来る ===== */
+  figure.slidein{position:relative;opacity:0;transform:translateX(var(--sx,-60vw));
+    transition:opacity .7s ease,transform .9s cubic-bezier(.18,.9,.24,1)}
+  figure.slidein.in{opacity:1;transform:none}
+  /* 車両っぽい上辺の帯（行先表示）＋下のレール */
+  figure.slidein::before{content:"🚃 " attr(data-line);position:absolute;top:-11px;left:16px;z-index:2;
+    background:#37474f;color:#fff;font-size:11px;letter-spacing:.06em;padding:2px 10px;border-radius:6px;
+    box-shadow:0 2px 5px rgba(0,0,0,.2)}
+  figure.slidein::after{content:"";position:absolute;left:-4px;right:-4px;bottom:-9px;height:4px;border-radius:2px;
+    background:repeating-linear-gradient(90deg,#9aa3ad 0 16px,#cfd5db 16px 22px)}
+  @media(prefers-reduced-motion:reduce){figure.slidein{opacity:1;transform:none}}
+  /* ===== 要因ネットワーク図（Obsidian風）===== */
+  .graphfig{position:relative;left:50%;transform:translateX(-50%);width:min(1080px,95vw);
+    margin:14px auto 10px;background:radial-gradient(120% 120% at 50% 40%,#ffffff 0%,#f4f7fb 100%);
+    border:1px solid var(--line);border-radius:18px;padding:14px 16px 10px;box-shadow:0 10px 26px rgba(20,50,100,.08)}
+  .graphfig .glabel{font-size:14px;font-weight:800;color:#2b3c50;margin:2px 4px 8px}
+  .graphfig .glabel .ghint{font-weight:600;font-size:11.5px;color:var(--sub);letter-spacing:.02em}
+  .graphfig svg{max-width:100%}
+  .graphfig .gedge{stroke-linecap:round;transition:opacity .15s,stroke-width .15s}
+  .graphfig .gedge.direct{stroke:#6f9bcf;stroke-width:4.2}
+  .graphfig .gedge.conf{stroke:#e6a760;stroke-width:2.4;stroke-dasharray:7 6;opacity:.85}
+  .graphfig .gnode{cursor:pointer;transition:opacity .15s}
+  .graphfig .gnode circle{transition:transform .15s}
+  .graphfig svg.foc .gedge{opacity:.09}
+  .graphfig svg.foc .gedge.hot{opacity:1;stroke-width:3.6}
+  .graphfig svg.foc .gnode{opacity:.26}
+  .graphfig svg.foc .gnode.hot{opacity:1}
+  .graphfig .glegend{display:flex;flex-wrap:wrap;gap:12px 16px;margin:10px 6px 2px;font-size:11.5px;color:#4a5b6b}
+  .graphfig .glegend span{display:inline-flex;align-items:center;gap:6px}
+  .graphfig .glegend i{display:inline-block}
+  .graphfig .glegend i.l{width:22px;height:0;border-top-width:3px;border-top-style:solid}
+  .graphfig .glegend i.l.direct{border-color:#9db9dd}
+  .graphfig .glegend i.l.conf{width:22px;border-top-style:dashed;border-color:#e9a869}
+  .graphfig .glegend i.d{width:13px;height:13px;border-radius:50%;border:2px solid}
+  .graphfig .glegend i.d.center{background:#22395c;border-color:#22395c}
+  .graphfig .glegend i.d.dir{background:#e7f0fb;border-color:#2f6fd0}
+  .graphfig .glegend i.d.cf{background:#fff1e2;border-color:#e8843d}
+  .graphfig .glegend i.d.bgc{background:#eaf3ee;border-color:#5f9e7c}
+  @media(max-width:560px){.graphfig .glabel .ghint{display:none}}
+  /* ===== 間取り層別の図 ===== */
+  .planfig{margin:16px 0;padding:18px 22px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
+  .planfig .pt{font-size:15px;font-weight:800;color:#2b3c50;margin:0 0 10px;line-height:1.5}
+  .planfig svg{max-width:840px;margin:4px auto 0}
+  .planfig .pc{font-size:13px;color:var(--sub);margin:12px 4px 0;line-height:1.6}
+</style>
+</head>
+<body>
+<section class="hero" id="hero">
+  <div class="hero-stage">
+    <div class="reveal">
+      <div class="skyline" aria-hidden="true"></div>
+      <div class="hero-title" id="heroTitle">
+        <div class="plate">
+          <h1>八王子 中古マンション<br>価格分析</h1>
+          <p>情報科学セミナーI（三木研）｜2026-07-02</p>
+        </div>
+        <div class="scrollcue">SCROLL ↓</div>
+      </div>
+    </div>
+    <div class="facade facade-l" id="facadeL"></div>
+    <div class="facade facade-r" id="facadeR"></div>
+    <div class="hero-hint">スクロールで開く</div>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <p class="lead">国土交通省「不動産取引価格情報」を用いて、八王子市とその沿線（京王線・JR中央線）の中古マンション価格が
+  <b>どんな要因で決まり、2024→2025でどう変わったか</b>を分析した。テーマは研究室の方針「<b>分析＝区別する／因果を明確にする</b>」。</p>
+
+  <h2>0. 目的（この分析で何を明らかにするか）</h2>
+  <div class="purpose">
+    <span class="plabel">🎯 この分析の目的</span>
+    <p class="q"><b>問い：</b>八王子の中古マンション価格を動かしている本当の要因は「広さ・立地・築古・駅アクセス」のどれか。そして 2024→2025 で価格の決まり方は変わったか。</p>
+    <p class="a">素直に「価格 〜 全項目」を回すと、面積と間取りのように<b>中身が重複した変数</b>が混ざって係数が壊れる（＝“素直が仇”）。先に問いを立て、<b>層別・交絡に注意して</b>要因を切り分ける。なお<b>「立地」は2階層で見る</b> — 八王子“内”は物件差（面積・築年・駅距離）、<b>沿線スケールは“都心方向の位置”</b>として別に扱う。</p>
+  </div>
+
+  <div class="confound">
+    <span class="flag">⚠️ 今回いちばん注意したこと</span>
+    <h3>キーワードは <span class="big">交絡（こうらく）</span></h3>
+    <p class="def"><b>「A と B が直接つながっている」と思ったら、実は裏で C が両方を動かしていた</b>——これが交絡。混ぜたまま平均や回帰を出すと、結論を丸ごと誤る。今回の八王子データでも、生の数字を追うと「値下がり」「駅遠でも売れる」と読めてしまうが、裏で効く 3 つの変数を <b>“区別（層別）”</b> すると景色が変わった。</p>
+    <div class="chips">
+      <div class="chip"><span class="t">🏠 間取り／面積</span><span class="d">2025 は新築 1K が急増。総額↓なのに単価↑という“見かけの逆転”の主犯。</span></div>
+      <div class="chip"><span class="t">🏗️ 築年数</span><span class="d">単身の単価上昇は“新築物件への入れ替わり”が正体。純粋な値上がりではない。</span></div>
+      <div class="chip"><span class="t">📍 駅・地区（立地）</span><span class="d">データに列が無い省略変数。価格・築古・単身比率すべての共通原因。</span></div>
+    </div>
+  </div>
+
+  <h2>要因マップ（全体像）— 物件を中心に、関係する因子と交絡</h2>
+  <figure class="graphfig">
+    <div class="glabel">🕸️ 物件（価格）を中心にした因子ネットワーク <span class="ghint">▸ 因子にカーソルを乗せると、つながっている相手だけ光ります</span></div>
+    <svg viewBox="0 0 1040 730" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block" role="img" aria-label="要因マップ">
+<line class="gedge direct" data-a="price" data-b="面積" x1="520" y1="355" x2="325" y2="165"/>
+<line class="gedge direct" data-a="price" data-b="立地" x1="520" y1="355" x2="735" y2="165"/>
+<line class="gedge direct" data-a="price" data-b="築年数" x1="520" y1="355" x2="850" y2="355"/>
+<line class="gedge direct" data-a="price" data-b="路線数" x1="520" y1="355" x2="715" y2="560"/>
+<line class="gedge direct" data-a="price" data-b="駅距離" x1="520" y1="355" x2="295" y2="545"/>
+<line class="gedge conf" data-a="間取り" data-b="面積" x1="525" y1="92" x2="325" y2="165"/>
+<line class="gedge conf" data-a="間取り" data-b="築年数" x1="525" y1="92" x2="850" y2="355"/>
+<line class="gedge conf" data-a="間取り" data-b="単身1K" x1="525" y1="92" x2="905" y2="160"/>
+<line class="gedge conf" data-a="単身1K" data-b="築年数" x1="905" y1="160" x2="850" y2="355"/>
+<line class="gedge conf" data-a="単身1K" data-b="投資" x1="905" y1="160" x2="965" y2="300"/>
+<line class="gedge conf" data-a="単身1K" data-b="学園都市" x1="905" y1="160" x2="935" y2="435"/>
+<line class="gedge conf" data-a="立地" data-b="単身1K" x1="735" y1="165" x2="905" y2="160"/>
+<line class="gedge conf" data-a="立地" data-b="築年数" x1="735" y1="165" x2="850" y2="355"/>
+<line class="gedge conf" data-a="都心アクセス" data-b="立地" x1="905" y1="560" x2="735" y2="165"/>
+<line class="gedge conf" data-a="都心アクセス" data-b="路線数" x1="905" y1="560" x2="715" y2="560"/>
+<line class="gedge conf" data-a="都心アクセス" data-b="グリーン車" x1="905" y1="560" x2="745" y2="668"/>
+<line class="gedge conf" data-a="都心アクセス" data-b="沿線需要" x1="905" y1="560" x2="495" y2="682"/>
+<line class="gedge conf" data-a="沿線需要" data-b="リモート" x1="495" y1="682" x2="235" y2="660"/>
+<g class="gnode" data-id="price">
+<circle cx="520" cy="355" r="62" fill="#22395c" stroke="#22395c" stroke-width="3"/>
+<text x="520" y="350" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" paint-order="stroke" stroke="#22395c" stroke-width="0.6">物件<tspan x="520" dy="22">（価格）</tspan></text>
+</g>
+<g class="gnode" data-id="面積">
+<circle cx="325" cy="165" r="50" fill="#e7f0fb" stroke="#2f6fd0" stroke-width="3"/>
+<text x="325" y="171" text-anchor="middle" font-size="15.5" font-weight="800" fill="#173250" paint-order="stroke" stroke="#e7f0fb" stroke-width="0.6">面積</text>
+</g>
+<g class="gnode" data-id="立地">
+<circle cx="735" cy="165" r="50" fill="#e7f0fb" stroke="#2f6fd0" stroke-width="3"/>
+<text x="735" y="160" text-anchor="middle" font-size="15.5" font-weight="800" fill="#173250" paint-order="stroke" stroke="#e7f0fb" stroke-width="0.6">立地<tspan x="735" dy="18.5">駅・地区</tspan></text>
+</g>
+<g class="gnode" data-id="築年数">
+<circle cx="850" cy="355" r="50" fill="#e7f0fb" stroke="#2f6fd0" stroke-width="3"/>
+<text x="850" y="361" text-anchor="middle" font-size="15.5" font-weight="800" fill="#173250" paint-order="stroke" stroke="#e7f0fb" stroke-width="0.6">築年数</text>
+</g>
+<g class="gnode" data-id="路線数">
+<circle cx="715" cy="560" r="50" fill="#e7f0fb" stroke="#2f6fd0" stroke-width="3"/>
+<text x="715" y="555" text-anchor="middle" font-size="15.5" font-weight="800" fill="#173250" paint-order="stroke" stroke="#e7f0fb" stroke-width="0.6">路線数<tspan x="715" dy="18.5">・系統</tspan></text>
+</g>
+<g class="gnode" data-id="駅距離">
+<circle cx="295" cy="545" r="50" fill="#e7f0fb" stroke="#2f6fd0" stroke-width="3"/>
+<text x="295" y="551" text-anchor="middle" font-size="15.5" font-weight="800" fill="#173250" paint-order="stroke" stroke="#e7f0fb" stroke-width="0.6">駅距離</text>
+</g>
+<g class="gnode" data-id="間取り">
+<circle cx="525" cy="92" r="47" fill="#fff1e2" stroke="#e8843d" stroke-width="3"/>
+<text x="525" y="98" text-anchor="middle" font-size="14.5" font-weight="800" fill="#8a4410" paint-order="stroke" stroke="#fff1e2" stroke-width="0.6">間取り</text>
+</g>
+<g class="gnode" data-id="単身1K">
+<circle cx="905" cy="160" r="47" fill="#fff1e2" stroke="#e8843d" stroke-width="3"/>
+<text x="905" y="155" text-anchor="middle" font-size="14.5" font-weight="800" fill="#8a4410" paint-order="stroke" stroke="#fff1e2" stroke-width="0.6">単身1K<tspan x="905" dy="17.5">新築供給</tspan></text>
+</g>
+<g class="gnode" data-id="投資">
+<circle cx="965" cy="300" r="43" fill="#eaf3ee" stroke="#5f9e7c" stroke-width="3"/>
+<text x="965" y="295" text-anchor="middle" font-size="13.5" font-weight="800" fill="#2c5540" paint-order="stroke" stroke="#eaf3ee" stroke-width="0.6">投資ﾏﾈｰ<tspan x="965" dy="16.5">都心高騰</tspan></text>
+</g>
+<g class="gnode" data-id="学園都市">
+<circle cx="935" cy="435" r="43" fill="#eaf3ee" stroke="#5f9e7c" stroke-width="3"/>
+<text x="935" y="430" text-anchor="middle" font-size="13.5" font-weight="800" fill="#2c5540" paint-order="stroke" stroke="#eaf3ee" stroke-width="0.6">学園<tspan x="935" dy="16.5">都市</tspan></text>
+</g>
+<g class="gnode" data-id="都心アクセス">
+<circle cx="905" cy="560" r="47" fill="#fff1e2" stroke="#e8843d" stroke-width="3"/>
+<text x="905" y="555" text-anchor="middle" font-size="14.5" font-weight="800" fill="#8a4410" paint-order="stroke" stroke="#fff1e2" stroke-width="0.6">都心<tspan x="905" dy="17.5">アクセス</tspan></text>
+</g>
+<g class="gnode" data-id="グリーン車">
+<circle cx="745" cy="668" r="43" fill="#eaf3ee" stroke="#5f9e7c" stroke-width="3"/>
+<text x="745" y="663" text-anchor="middle" font-size="13.5" font-weight="800" fill="#2c5540" paint-order="stroke" stroke="#eaf3ee" stroke-width="0.6">ｸﾞﾘｰﾝ車<tspan x="745" dy="16.5">2025/3</tspan></text>
+</g>
+<g class="gnode" data-id="沿線需要">
+<circle cx="495" cy="682" r="47" fill="#fff1e2" stroke="#e8843d" stroke-width="3"/>
+<text x="495" y="677" text-anchor="middle" font-size="14.5" font-weight="800" fill="#8a4410" paint-order="stroke" stroke="#fff1e2" stroke-width="0.6">沿線需要<tspan x="495" dy="17.5">利用者数</tspan></text>
+</g>
+<g class="gnode" data-id="リモート">
+<circle cx="235" cy="660" r="43" fill="#eaf3ee" stroke="#5f9e7c" stroke-width="3"/>
+<text x="235" y="655" text-anchor="middle" font-size="13.5" font-weight="800" fill="#2c5540" paint-order="stroke" stroke="#eaf3ee" stroke-width="0.6">ﾘﾓｰﾄ<tspan x="235" dy="16.5">ﾜｰｸ</tspan></text>
+</g>
+</svg>
+    <div class="glegend">
+      <span><i class="d center"></i>物件（価格）＝中心</span>
+      <span><i class="l direct"></i>価格を直接動かす要因</span>
+      <span><i class="l conf"></i>交絡でつながる（層別が必要）</span>
+      <span><i class="d dir"></i>直接要因</span>
+      <span><i class="d cf"></i>構成・交絡</span>
+      <span><i class="d bgc"></i>背景・外部要因</span>
+    </div>
+    <figcaption>「物件の価格」を直接動かすのは<b>面積・築年数・駅距離・立地・路線数</b>（青の実線）。だがその周りで<b>間取り・単身1K/新築供給・都心アクセス・沿線需要</b>などが<b>交絡（オレンジ点線）</b>でつながり、生の数字を歪める。だから“区別（層別）”して切り分けた。</figcaption>
+  </figure>
+
+  <h2>1. データ概要</h2>
+  <div class="card">
+    <table>
+      <tr><th>データ</th><th>件数</th><th>取引時期</th><th>備考</th></tr>
+      <tr><td>八王子中古マンション2024.csv</td><td class="num">689</td><td>2023Q4–2024Q3</td><td>建ぺい率・用途・改装が大量欠損</td></tr>
+      <tr><td>八王子中古マンション2025.csv</td><td class="num">322</td><td>2024Q4–2025Q3</td><td>建ぺい率・容積率はほぼ揃う</td></tr>
+      <tr><td>沿線14駅（京王線・中央線）</td><td class="num">約1,500</td><td>2024–2025</td><td>reinfolib 駅別CSV。中古マンションのみ抽出</td></tr>
+    </table>
+    <p class="lead">出典：国土交通省「不動産情報ライブラリ（不動産取引価格情報）」／文字コード Shift-JIS。前処理で 外れ値（100万円未満）・調停/競売等・距離の範囲表記・築年→築年数 を整理。</p>
+  </div>
+
+  <h2>2. 値段は上がったのか？ — “素直が仇”の実例</h2>
+  <p>全体の総額中央値は <b>2,600万 → 2,300万</b> と<span class="down">下落したように見える</span>。だがこれは売れた物件の構成が変わっただけ。間取りで分けると真逆になる。</p>
+  <p><b>同じ構成シフト（安い新築1Kの増加）が、総額の中央値を押し下げると同時に、平均㎡単価を押し上げる。</b>1つの原因が「値下がり」と「値上がり」の<b>両方の見かけを同時に</b>作っている——だから総額も単価も、そのままでは信じられない。</p>
+  <div class="planfig">
+    <p class="pt">🧩 層別の定義：間取りで2つに分ける（＝クラスタリングではなく、人が決めた基準で機械的に分けた「層別」）</p>
+    <svg viewBox="0 0 920 360" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block" role="img" aria-label="間取りで層別">
+<rect x="70" y="60" width="235" height="175" rx="6" fill="#ffffff" stroke="#333" stroke-width="3"/>
+<rect x="85" y="75" width="150" height="145" rx="4" fill="#fff6ec" stroke="#e6a45f" stroke-width="2"/><text x="160.0" y="152.5" text-anchor="middle" font-size="16" font-weight="700" fill="#3a4653">洋室</text>
+<rect x="240" y="75" width="50" height="90" rx="4" fill="#f3f6fa" stroke="#aab7c4" stroke-width="2"/><text x="265.0" y="125.0" text-anchor="middle" font-size="13" font-weight="700" fill="#3a4653">K</text>
+<rect x="240" y="170" width="50" height="50" rx="4" fill="#eef2f6" stroke="#aab7c4" stroke-width="2"/><text x="265.0" y="200.0" text-anchor="middle" font-size="12" font-weight="700" fill="#3a4653">浴</text>
+<path d="M255 235 v14 h20" fill="none" stroke="#888" stroke-width="2"/><text x="248" y="262" font-size="10" fill="#888">玄関</text>
+<rect x="60" y="285" width="255" height="46" rx="10" fill="#e0812f"/>
+<text x="187" y="307" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">1R・1K → 単身層</text>
+<text x="187" y="325" text-anchor="middle" font-size="12" fill="#fff">≈18㎡・1部屋（投資/単身者向け）</text>
+<text x="400" y="150" text-anchor="middle" font-size="34" font-weight="800" fill="#9aa6b2">→</text>
+<text x="400" y="180" text-anchor="middle" font-size="13" fill="#7a8794">間取りで</text>
+<text x="400" y="197" text-anchor="middle" font-size="13" fill="#7a8794">層別</text>
+<rect x="500" y="45" width="345" height="205" rx="6" fill="#ffffff" stroke="#333" stroke-width="3"/>
+<rect x="515" y="60" width="175" height="120" rx="4" fill="#eaf0fb" stroke="#6f9bcf" stroke-width="2"/><text x="602.5" y="125.0" text-anchor="middle" font-size="18" font-weight="700" fill="#3a4653">LDK</text>
+<rect x="700" y="60" width="130" height="80" rx="4" fill="#eef4ec" stroke="#7faf85" stroke-width="2"/><text x="765.0" y="105.0" text-anchor="middle" font-size="15" font-weight="700" fill="#3a4653">洋室</text>
+<rect x="700" y="148" width="130" height="87" rx="4" fill="#eef4ec" stroke="#7faf85" stroke-width="2"/><text x="765.0" y="196.5" text-anchor="middle" font-size="15" font-weight="700" fill="#3a4653">洋室</text>
+<rect x="515" y="188" width="120" height="47" rx="4" fill="#eef4ec" stroke="#7faf85" stroke-width="2"/><text x="575.0" y="216.5" text-anchor="middle" font-size="14" font-weight="700" fill="#3a4653">洋室</text>
+<rect x="645" y="188" width="45" height="47" rx="4" fill="#eef2f6" stroke="#aab7c4" stroke-width="2"/><text x="667.5" y="216.5" text-anchor="middle" font-size="12" font-weight="700" fill="#3a4653">浴</text>
+<rect x="500" y="285" width="345" height="46" rx="10" fill="#2f6fd0"/>
+<text x="672" y="307" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">2LDK以上 → ファミリー層</text>
+<text x="672" y="325" text-anchor="middle" font-size="12" fill="#fff">≈65〜80㎡・複数部屋（市場の主役）</text>
+</svg>
+    <p class="pc">この2層を主役に比較する。<b>1LDK・1DK・2K 等の中間タイプは「中間層」として別扱い</b>。単身層＝築古・小型で投資/単身向け、ファミリー層＝広め・複数部屋で実需の主役。</p>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h3>単身向け 1K（投資・単身）</h3>
+      <table>
+        <tr><th></th><th class="num">2024</th><th class="num">2025</th></tr>
+        <tr><td>㎡単価(中央)</td><td class="num">23万</td><td class="num"><span class="up">39万</span></td></tr>
+        <tr><td>取引割合</td><td class="num">13%</td><td class="num"><span class="up">23%</span></td></tr>
+      </table>
+      <p>投資マネー流入で <b>㎡単価+70%</b>・取引急増。<span style="color:var(--sub)">※新築1Kは件数が少なく（築0-5年 2→13件）、倍率そのものは留保。</span></p>
+    </div>
+    <div class="card">
+      <h3>ファミリー向け（2LDK+）</h3>
+      <table>
+        <tr><th></th><th class="num">2024</th><th class="num">2025</th></tr>
+        <tr><td>㎡単価(中央)</td><td class="num">38.3万</td><td class="num">38.3万</td></tr>
+        <tr><td>総額(中央)</td><td class="num">2,900万</td><td class="num">2,700万</td></tr>
+      </table>
+      <p>㎡単価は<b>横ばい</b>（総額の微減は面積の小型化ぶん）。</p>
+    </div>
+  </div>
+  <div class="callout key"><b>📌 この節の観察：</b>㎡単価で見れば価格は上がっている。ただし上がったのは<b>投資用ワンルーム</b>で、ファミリー向けはほぼ横ばい。総額中央値の下落は<b>構成が小型側にズレた錯覚</b>（＝交絡）。<span style="color:var(--sub)">※最終的な答えは末尾「9. 結論」に。</span></div>
+
+  <h2>3. 駅からの距離 × 価格</h2>
+  <p>どちらの年も「駅近ほど高い」構造は不変（右肩下がり）。ただし<b>値上がり幅は遠い帯ほど大きく</b>、駅近と駅遠の差＝駅近プレミアムは縮小した。</p>
+  <figure class="winfig framed chuo">
+    <span class="wlabel chuo">🚃 中央線の車窓：駅距離 × ㎡単価</span>
+    <img src="framed_距離.png" alt="駅距離×㎡単価">
+    <figcaption>駅距離別 ㎡単価中央値（全体）。駅前+2.1万に対しバス便+6.1万＝遠い帯ほど値上がり。</figcaption>
+  </figure>
+  <p>層で分けると動きは真逆。<b>ファミリーは全体（全距離の中央値）では横ばいでも、距離帯で割ると内部で逆向きに動く</b>——単身は駅近ほど値上がり、ファミリーは駅近が下落・駅遠が逆転上昇（線がクロス）。</p>
+  <figure class="winfig framed keio">
+    <span class="wlabel keio">🚃 京王線の車窓：単身 vs ファミリー</span>
+    <img src="framed_層別.png" alt="単身vsファミリー 距離別">
+    <figcaption>左：単身向けは全距離で値上がり（駅近ほど強い）／右：ファミリー向けは駅近↓・駅遠↑でクロス。</figcaption>
+  </figure>
+
+  <h2>4. 路線本数・都心アクセス（駅の“足の便”）</h2>
+  <p>乗り入れ路線が多い駅ほど㎡単価が高い。3路線の八王子が突出し、伸びも最大。系統別では<b>グリーン車が入ったJR中央線(快速)が最高値かつ最も上昇</b>。</p>
+  <table>
+    <tr><th>路線数</th><th class="num">2024</th><th class="num">2025</th></tr>
+    <tr><td>1路線</td><td class="num">33.3万</td><td class="num">35.8万</td></tr>
+    <tr><td>2路線</td><td class="num">36.8万</td><td class="num">38.5万</td></tr>
+    <tr><td>3路線（八王子・京王多摩センター）</td><td class="num">49.2万</td><td class="num"><span class="up">55.4万</span></td></tr>
+  </table>
+  <figure class="winfig framed chuo">
+    <span class="wlabel chuo">🚃 中央線の車窓：鉄道系統別 ㎡単価</span>
+    <img src="framed_系統.png" alt="鉄道系統別 ㎡単価">
+    <figcaption>系統別 ㎡単価。JR中央線(快速)＝八王子・西八王子＝グリーン車導入系統が最高値・伸びも大。京王高尾線・八高線（本数少）が最安。</figcaption>
+  </figure>
+
+  <h2>5. 運賃改定の時系列（背景要因）</h2>
+  <p>時期の綾：<b>京王 2023/10 に28年ぶり+13.3%値上げ</b>（相模原線は加算運賃廃止＝実質値下げ）／<b>2025/3 中央線グリーン車</b>（+750円/日）／<b>2026/3 JR運賃+約25%</b>（期間外）。</p>
+  <figure class="winfig framed keio">
+    <span class="wlabel keio">🚃 京王線の車窓：㎡単価の推移</span>
+    <img src="framed_時系列.png" alt="時系列 ㎡単価とイベント">
+    <figcaption>四半期の㎡単価とイベント。四半期は件数が少なく振れが大きい。時系列での因果主張は避け、背景として扱う。</figcaption>
+  </figure>
+  <div class="callout warn"><b>注意：</b>四半期別は n が小さく（57〜190）季節性の波が目立つ。価格変化の主張は<b>年度比較（2024 vs 2025）</b>を軸にする。</div>
+
+  <h2>6. 沿線比較 — 八王子から都心方向へ</h2>
+  <p>八王子だけでなく京王線・中央線の沿線で見ると、<b>都心に近い駅ほど㎡単価が高く（勾配）、2024→2025でその傾きがさらに急に</b>なった。都心寄り（国分寺・府中・立川・国立）は値上がり、外側（高尾・京王八王子・日野）は値下がり。</p>
+
+<figure class="winfig framed">
+    <span class="wlabel">🗺️ 実際の位置に重ねたヒートマップ（2024→2025の変化を主役に）</span>
+    <img src="map_heat.png" alt="沿線ヒートマップ">
+    <figcaption>実際の地図に、①<b>2024→2025の変化</b>、②2025年㎡単価、③1日平均乗降人員（＝利用者数・令和5年度）を重ねた。①＝<b>都心方向の駅（国分寺+5・府中+5・国立+2）が赤く値上がり、外側（高尾−7・京王八王子−11・日野−3・聖蹟−3）が青く値下がり</b>（数値は㎡単価の変化・万円/㎡）＝需要が都心寄りへ集中。②＝2025年水準そのもの（都心＝新宿に近いほど赤く高い）。③＝<b>立川28.9万・国分寺18.9万・八王子14.4万が三大ハブ</b>。<b>変化・水準・利用者数のいずれも「都心アクセスの良い幹線ハブ」に集中</b>している。※乗降人員は駅全体（立川・八王子・分倍河原は他路線分も含むハブ）。出典：国土数値情報（駅別乗降客数・令和5年度）。</figcaption>
+  </figure>
+
+  <div class="trainwrap" id="trainCorridor">
+    <div class="tl chuo">🚃 JR中央線 <span class="lg">窓の数字＝2025年㎡単価／外側⟶都心（右ほど都心）</span></div>
+    <div class="railscene chuo">
+      <div class="rtrain chuo"><img src="train_chuo_win.png" alt="chuo">
+        <div class="wov" style="left:6.86%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">31</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:19.13%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">29</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:31.4%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">57</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:43.72%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">54</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:56.03%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">33</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:68.37%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">75</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:80.71%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">71</span><span class="u">万/㎡</span></div>
+        <div class="wov hi" style="left:93.0%;top:38%;width:11%"><span class="p" style="font-size:clamp(15px,2.3vw,23px)">87</span><span class="u">万/㎡</span></div>
+        <div class="wnm chuo" style="left:6.86%;top:6%;font-size:clamp(9px,1.3vw,12px)">高尾</div>
+        <div class="wnm chuo" style="left:19.13%;top:6%;font-size:clamp(9px,1.3vw,12px)">西八王子</div>
+        <div class="wnm chuo" style="left:31.4%;top:6%;font-size:clamp(9px,1.3vw,12px)">八王子</div>
+        <div class="wnm chuo" style="left:43.72%;top:6%;font-size:clamp(9px,1.3vw,12px)">豊田</div>
+        <div class="wnm chuo" style="left:56.03%;top:6%;font-size:clamp(9px,1.3vw,12px)">日野</div>
+        <div class="wnm chuo" style="left:68.37%;top:6%;font-size:clamp(9px,1.3vw,12px)">立川</div>
+        <div class="wnm chuo" style="left:80.71%;top:6%;font-size:clamp(9px,1.3vw,12px)">国立</div>
+        <div class="wnm chuo" style="left:93.0%;top:6%;font-size:clamp(9px,1.3vw,12px)">国分寺</div>
+      </div>
+    </div>
+    <div class="tl keio">🚃 京王線 <span class="lg">窓の数字＝2025年㎡単価／外側⟶都心（右ほど都心）</span></div>
+    <div class="railscene keio">
+      <div class="rtrain keio"><img src="train_keio_win.png" alt="keio">
+        <div class="wov" style="left:8.77%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">35</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:25.05%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">35</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:41.34%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">33</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:57.76%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">49</span><span class="u">万/㎡</span></div>
+        <div class="wov" style="left:74.22%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">58</span><span class="u">万/㎡</span></div>
+        <div class="wov hi" style="left:90.68%;top:45%;width:12.5%"><span class="p" style="font-size:clamp(16px,2.5vw,26px)">80</span><span class="u">万/㎡</span></div>
+        <div class="wnm keio" style="left:8.77%;top:12%;font-size:clamp(9px,1.4vw,13px)">京王八王子</div>
+        <div class="wnm keio" style="left:25.05%;top:12%;font-size:clamp(9px,1.4vw,13px)">北野</div>
+        <div class="wnm keio" style="left:41.34%;top:12%;font-size:clamp(9px,1.4vw,13px)">高幡不動</div>
+        <div class="wnm keio" style="left:57.76%;top:12%;font-size:clamp(9px,1.4vw,13px)">聖蹟桜ヶ丘</div>
+        <div class="wnm keio" style="left:74.22%;top:12%;font-size:clamp(9px,1.4vw,13px)">分倍河原</div>
+        <div class="wnm keio" style="left:90.68%;top:12%;font-size:clamp(9px,1.4vw,13px)">府中</div>
+      </div>
+    </div>
+  </div>
+
+  <figure class="winfig framed chuo">
+    <span class="wlabel chuo">🚃 中央線の車窓：沿線比較（八王子→都心）</span>
+    <img src="framed_沿線.png" alt="沿線比較 ㎡単価">
+    <figcaption>上：JR中央線／下：京王線。外側→都心方向へ ㎡単価は逓増。都心寄りの駅が上昇、外側が下落。</figcaption>
+  </figure>
+  <div class="callout key"><b>📌 この節の観察：</b>「駅近プレミアムが弱まった」の正体は八王子内で完結する話ではなく、<b>沿線スケールで価値が“都心アクセスの強い駅”に集中</b>したこと。八王子や外側は相対的に置いていかれた。<span style="color:var(--sub)">※最終的な答えは末尾「9. 結論」に。</span></div>
+  <div class="callout warn"><b>注意：</b>八王子駅のみ市データ由来で2025が3四半期分。<b>取引件数の流出は“傾向”どまり</b>（価格の集中は自信を持って言える）。</div>
+
+  <h2>7. 外部要因の考察（同年代 2023–2025）</h2>
+  <p>価格が都心寄りに集中した背景として、同時期の交通・移動手段の変化が考えられる。<b>両方向に効いている</b>のがポイント。</p>
+  <table>
+    <tr><th>向き</th><th>要因</th><th>内容</th></tr>
+    <tr><td class="up">都心集中を後押し</td><td>中央線グリーン車(2025/3)</td><td>座って都心通勤。都心アクセスの価値↑</td></tr>
+    <tr><td class="up">〃</td><td>都心マンション高騰の波及</td><td>投資用1Kが駅近に流入（単身層の高騰）</td></tr>
+    <tr><td class="down">郊外を後押し（逆風の名残）</td><td>電動アシスト自転車の普及</td><td>駅遠のハンデを緩和（ファミリー郊外の粘り）</td></tr>
+    <tr><td class="down">〃</td><td>コロナ後のリモートワーク</td><td>2021〜22の駅離れ・郊外化。2024〜25は<b>出社回帰で逆流</b>局面</td></tr>
+    <tr><td class="down">郊外に不利</td><td>路線バス「2024年問題」減便</td><td>バス便物件が不便化（西東京バス系統見直し）</td></tr>
+  </table>
+  <div class="callout q"><b>リモートワーク仮説：</b>コロナ期の駅離れ（郊外化）は実在したが<b>ピークは2021〜2022</b>。本データ(2024–2025)はその効果が薄れ、<b>出社回帰で都心回帰へ逆流</b>している局面と読める。名残（駅遠の差縮小・ファミリー郊外の粘り）は残る。<b>※本データ単体では直接検証不可＝背景の考察</b>。</div>
+
+    <h2>正規化して2年を比べる — 動いたのは「面積」だけ</h2>
+  <p>2024と2025を<b>同じものさし（両年まとめて標準化）</b>で並べ、さらに<b>構成（間取りミックス）を揃えて</b>比べると、見かけの派手な動きが交絡だったことが数字で確認できる。</p>
+  <figure class="winfig framed">
+    <span class="wlabel">📐 正規化比較：z-score年差 ＆ 構成を揃えた前後</span>
+    <img src="normalize_compare.png" alt="正規化比較">
+    <figcaption>①両年を標準化すると、実際に大きく動いた変数は <b>面積（−0.42 SD＝小型化）だけ</b>。築年数・駅距離はほぼ0＝決まり方は不変。②構成（間取り）を揃えると <b>総額の下落は87%が消え（−259→−34万）</b>、㎡単価の上昇も縮む（残り +3.8 は単身1K内の新築入れ替わり＝築年数の交絡）。</figcaption>
+  </figure>
+  <div class="callout key"><b>📌 正規化で分かること：</b>2024→2025で本当に動いたのは <b>「物件の小型化（面積）」だけ</b>。㎡単価↑・総額↓は面積縮小の裏表で、構成を揃えると消える。＝<b>価格の“決まり方”は変わっていない</b>を、正規化が数字で裏づける。</div>
+
+  <h2>8. クラスタリング — データ自身に“物件タイプ”を聞く</h2>
+  <p>ここまでは「間取り」という<b>人間が決めた基準</b>で層別してきた。最後に基準を与えず、<b>k-means（k=3）でデータ自身にグループ分けさせる</b>（特徴量：面積・築年数・駅距離・㎡単価）。</p>
+  <figure class="winfig framed">
+    <span class="wlabel">📊 クラスタリング（k-means, k=3）：築年数 × ㎡単価</span>
+    <img src="cluster_scatter.png" alt="クラスタリング散布図">
+    <figcaption>データは「間取り（単身/ファミリー）」ではなく <b>“築年数 × 単価”</b> で3タイプに分かれた。× ＝各クラスタの重心。</figcaption>
+  </figure>
+  <table>
+    <tr><th>クラスタ（データ自動）</th><th class="num">件数</th><th class="num">面積</th><th class="num">築年数</th><th class="num">駅距離</th><th class="num">㎡単価</th><th class="num">総額</th><th>間取り内訳</th></tr>
+    <tr><td><b>② 築浅・駅近・プレミアム</b></td><td class="num">220</td><td class="num">57㎡</td><td class="num">10年</td><td class="num">7分</td><td class="num">73万</td><td class="num">3,970万</td><td>ファミリー69% / 単身18%</td></tr>
+    <tr><td><b>③ 広め・標準ファミリー</b></td><td class="num">466</td><td class="num">81㎡</td><td class="num">24年</td><td class="num">13分</td><td class="num">36万</td><td class="num">2,867万</td><td>ファミリー96%</td></tr>
+    <tr><td><b>① 築古・小型・格安</b></td><td class="num">266</td><td class="num">42㎡</td><td class="num">41年</td><td class="num">9分</td><td class="num">25万</td><td class="num">1,001万</td><td>ファミリー47% / 単身42%</td></tr>
+  </table>
+  <div class="callout key"><b>📌 ここが効く：</b>データ自身に聞いても分かれ目は<b>築年数（＋単価）</b>で、間取りでは切れない（単身1Kは①の築古・格安に散る）。→ 回帰の「<b>築古が最大要因</b>」を<b>クラスタリングが独立に裏づけ</b>。なお本分析の「単身/ファミリー」は、この自動分類とは別に、<b>交絡（新築1Kの流入）を剥がすために間取りで引いた“層別”</b>である点に注意。</div>
+
+  <h2>9. 結論 — この分析の答え</h2>
+  <p style="margin:14px 0 6px">結論の前に「見かけの変化が本物か」を確かめる。市場の主役 <b>ファミリー(2LDK+)だけで層別回帰</b>し、単身1Kの構成交絡を剥がした（<b>標準化β</b>＝単位をそろえた“効き”の比較）。</p>
+  <table>
+    <tr><th>標準化β（総額）</th><th class="num">2024</th><th class="num">2025</th><th>読み</th></tr>
+    <tr><td><b>築年数（築古）</b></td><td class="num">−0.71</td><td class="num">−0.70</td><td>最大の要因・ほぼ不変</td></tr>
+    <tr><td>駅距離（駅アクセス）</td><td class="num">−0.28</td><td class="num">−0.21</td><td>中程度・やや弱まる</td></tr>
+    <tr><td>面積（広さ）</td><td class="num">+0.24</td><td class="num">+0.28</td><td>中程度・不変</td></tr>
+    <tr><td>㎡単価 中央値（万円/㎡）</td><td class="num">38.3</td><td class="num">38.3</td><td>横ばい</td></tr>
+  </table>
+  <div class="answer">
+    <span class="plabel">✅ 目的で立てた問いへの答え</span>
+    <div class="qa">
+      <p class="qq">Q1. 価格を動かす“本当の要因”は「広さ・立地・築古・駅アクセス」のどれか？</p>
+      <p class="aa">ファミリー市場では <b>築古（築年数）が最大の決定要因</b>（標準化β −0.71）。<b>広さ（面積）と駅アクセス（駅距離）は中程度</b>。<b>立地</b>は八王子“内”では変数化しておらず、沿線スケールでのみ都心方向の位置が強く効く。※プールド（全物件）だと面積が大きく見えるが、これは極小の1Kが面積の効きを水増ししていたため。</p>
+    </div>
+    <div class="qa">
+      <p class="qq">Q2. 2024→2025 で価格の決まり方は変わったか？</p>
+      <p class="aa"><b>決まり方はほぼ変わっていない</b>。ファミリーの㎡単価は 38.3→38.3 で横ばい、築古・広さの効きも不変。<b>最も確からしい変化は「駅アクセスの効きがやや弱まった」こと</b>（駅距離ペナルティ −61→−42万/分。縮小の方向は全体・ファミリー両方で一致するが、2025はnが小さく、年をまたぐ係数差は交互作用項で検定していないため幅は断定しない）。「単価が上がった」「築古の減価が緩和した」という見かけの大変化は、<b>単身1K（新築）の流入による構成交絡</b>で、価格形成そのものの変化ではない。空間的には値上がりが<b>都心方向へ集中</b>した（別軸の発見・5章）。</p>
+    </div>
+    <p class="sum"><b>ひとことで：</b>交絡を剥がすと、八王子の中古マンション価格は依然「<b>築古が主役／決まり方はほぼ不変</b>」。実際に動いたのは <b>駅アクセスの効きがわずかに弱まったこと</b> と <b>取引の中身が新築1Kへシフトしたこと</b> の2点で、見かけの派手な変化はすべて構成効果だった。</p>
+  </div>
+
+  <div class="card">
+    <p>空間的には、八王子を含む多摩エリアの中古マンションは <b>「都心アクセスの良い駅を頂点に、郊外へ向かって価値がなだらかに逓減する」</b> 構造。2024→2025 で値上がりは都心寄りの駅に集中した（＝5章の変化ヒートマップ）。</p>
+  </div>
+  <h3>価格を動かす主要因（ファミリー層・標準化βの大きい順）</h3>
+  <ul>
+    <li><b>築年数（築古）</b>：β −0.71 ＝ 断トツの最大要因（新しいほど高い）</li>
+    <li><b>駅アクセス（駅距離）</b> β −0.28 ／ <b>広さ（面積）</b> β +0.24 ＝ 中程度</li>
+    <li><b>立地</b>：八王子“内”では未変数化。沿線スケールでは都心方向の位置が効く（→ 5章）</li>
+    <li>※プールド（全物件）では面積 β +0.47 と大きく出るが、極小の1Kによる水増し</li>
+  </ul>
+  <h3>交絡・多重共線性（層別で検証済み）</h3>
+  <ul>
+    <li><span class="tag">検証</span><b>層（単身/ファミリー）</b>が最大の交絡 → 層別回帰で確認：見かけの「単価上昇・築古減価の緩和」は<b>消えた</b>（＝構成効果だった）</li>
+    <li><span class="tag">交絡</span><b>駅（立地）×築年×単身比率</b>（例：西八王子＝築古・単身多・安）</li>
+    <li><span class="tag">共線</span>面積⇔間取り／容積率⇔都市計画 → どちらか一方</li>
+    <li><span class="tag">シロ</span>駅距離×築年数はほぼ無相関（両方入れてOK）</li>
+  </ul>
+
+  <div class="foot src">
+    <p><b>出典：</b>国土交通省 不動産情報ライブラリ／
+    <a href="https://www.jreast.co.jp/press/2024/hachioji/20241213_hc01.pdf">JR東日本 2025年3月ダイヤ改正</a>・
+    <a href="https://www.watch.impress.co.jp/docs/news/1488463.html">京王 2023年10月運賃改定</a>・
+    <a href="https://www.gov-online.go.jp/article/202410/entry-6604.html">自転車の青切符(2026/4)</a>・
+    <a href="https://nielseniq.com/global/jp/insights/report/2024/">電動アシスト自転車 販売動向</a>・
+    <a href="https://prtimes.jp/main/html/rd/p/000000776.000043465.html">路線バス減便(帝国データバンク)</a></p>
+    <p>情報科学セミナーI｜八王子中古マンション分析</p>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var hero=document.getElementById('hero'),
+      L=document.getElementById('facadeL'), R=document.getElementById('facadeR'),
+      T=document.getElementById('heroTitle'),
+      hint=document.querySelector('.hero-hint'),
+      sky=document.querySelector('.skyline');
+  if(!hero||!L||!R) return;
+  function smooth(p){return p*p*(3-2*p);}          // smoothstep
+  function tick(){
+    var total=hero.offsetHeight-window.innerHeight;
+    if(total<=0) return;
+    var p=Math.min(1,Math.max(0,(-hero.getBoundingClientRect().top)/total));
+    var e=smooth(p);
+    L.style.transform='translateX('+(-e*102)+'%)';
+    R.style.transform='translateX('+( e*102)+'%)';
+    // タイトルは開き始め〜中盤でフワッと出す
+    var tp=Math.min(1,Math.max(0,(p-0.12)/0.5));
+    T.style.opacity=tp;
+    T.style.transform='scale('+(0.86+0.14*smooth(tp))+')';
+    if(sky) sky.style.transform='translateY('+((1-e)*24)+'px)'; // 奥の街が軽くパララックス
+    if(hint) hint.style.opacity=(0.75*(1-Math.min(1,p*2)));
+  }
+  var ticking=false;
+  function onScroll(){ if(!ticking){requestAnimationFrame(function(){tick();ticking=false;});ticking=true;} }
+  document.addEventListener('scroll',onScroll,{passive:true});
+  window.addEventListener('resize',tick);
+  tick();
+})();
+
+/* 列車＆グラフ：スクロール位置で左右からスライドイン（IO非依存の確実版）*/
+(function(){
+  var vh=function(){return window.innerHeight||document.documentElement.clientHeight;};
+  function inView(el,frac){
+    var r=el.getBoundingClientRect(), h=vh();
+    return r.top < h*(1-frac) && r.bottom > h*frac;
+  }
+  var trains=[].slice.call(document.querySelectorAll('.railscene'));
+  var figs=[].slice.call(document.querySelectorAll('figure:not(.graphfig)'));
+  figs.forEach(function(f,i){ f.classList.add('slidein'); f.style.setProperty('--sx',(i%2? '60vw':'-60vw'));
+    f.setAttribute('data-line', i%2? 'データ入線 ⟵':'⟶ データ入線'); });
+  function check(){
+    trains.forEach(function(t){ if(!t.classList.contains('go') && inView(t,0.12)) t.classList.add('go'); });
+    figs.forEach(function(f){ if(!f.classList.contains('in') && inView(f,0.10)) f.classList.add('in'); });
+  }
+  document.addEventListener('scroll',check,{passive:true});
+  window.addEventListener('resize',check);
+  check(); setTimeout(check,120);
+})();
+</script>
+
+<script>
+(function(){
+  document.querySelectorAll('.graphfig svg').forEach(function(svg){
+    var edges=[].slice.call(svg.querySelectorAll('.gedge'));
+    var nodes=[].slice.call(svg.querySelectorAll('.gnode'));
+    nodes.forEach(function(g){
+      var id=g.getAttribute('data-id');
+      g.addEventListener('mouseenter',function(){
+        svg.classList.add('foc');
+        var nb={}; nb[id]=1;
+        edges.forEach(function(e){
+          var a=e.getAttribute('data-a'), b=e.getAttribute('data-b');
+          if(a===id||b===id){e.classList.add('hot'); nb[a]=1; nb[b]=1;}
+        });
+        nodes.forEach(function(n){ if(nb[n.getAttribute('data-id')]) n.classList.add('hot'); });
+      });
+      g.addEventListener('mouseleave',function(){
+        svg.classList.remove('foc');
+        edges.forEach(function(e){e.classList.remove('hot');});
+        nodes.forEach(function(n){n.classList.remove('hot');});
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
