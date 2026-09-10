@@ -14,6 +14,7 @@
 | | [飲料戦略分析](seminar-1/beverage/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/beverage/) |
 | | [八王子 中古マンション価格分析](seminar-1/hachioji-mansion/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/hachioji-mansion/) |
 | **予測モデリング** | [ベイズ統計 学習ノート](predictive-modeling/bayes/) | 学習ノート | [→](https://qoo-006.github.io/school/predictive-modeling/bayes/) |
+| **英語** | [自己紹介とパラグラフライティング](english/self-introduction-writing/) | 課題 | [→](https://qoo-006.github.io/school/english/self-introduction-writing/) |
 
 ---
 
@@ -29,8 +30,11 @@ school/
 │   ├── beverage/               ← 飲料戦略分析（単一HTML・自己完結）
 │   └── hachioji-mansion/       ← 八王子 中古マンション価格分析（index.html + 図版PNG）
 │
-└── predictive-modeling/        ← 予測モデリング
-    └── bayes/                  ← ベイズ統計 学習ノート（単一HTML・自己完結）
+├── predictive-modeling/        ← 予測モデリング
+│   └── bayes/                  ← ベイズ統計 学習ノート（単一HTML・自己完結）
+│
+└── english/                    ← 英語
+    └── self-introduction-writing/  ← 授業でやること + Self-introduction + パラグラフ
 ```
 
 各成果物フォルダは**自己完結**させる（相対パスがフォルダ内で閉じる）。
