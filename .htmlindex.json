@@ -15,6 +15,10 @@
     "english": {
       "name": "英語",
       "meta": "3年"
+    },
+    "tools": {
+      "name": "ツール",
+      "meta": "授業とは別枠"
     }
   },
   "items": {
@@ -23,6 +27,12 @@
       "desc": "授業でやることの整理、Self-introduction、趣味についての1パラグラフ",
       "tag": "課題",
       "date": "2026-09-10"
+    },
+    "tools/ai-workspace": {
+      "title": "Codexから始める AI作業環境入門",
+      "desc": "Codexのターミナル操作、Obsidian、Notionの学生プラン、API・MCPを、申込サイトとスクリーンショット付きで紹介。",
+      "tag": "入門ガイド",
+      "date": "2026-09-11"
     }
   }
 }

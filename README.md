@@ -16,6 +16,7 @@
 | **予測モデリング** | [ベイズ統計 学習ノート](predictive-modeling/bayes/) | 学習ノート | [→](https://qoo-006.github.io/school/predictive-modeling/bayes/) |
 | **英語** | [自己紹介とパラグラフライティング](english/self-introduction-writing/) | 課題 | [→](https://qoo-006.github.io/school/english/self-introduction-writing/) |
 | **ツール**（授業とは別枠） | [Claude Code スターターキット セットアップガイド](starter-kit/) | 手順書 | [→](https://qoo-006.github.io/school/starter-kit/) |
+| | [Codexから始める AI作業環境入門](tools/ai-workspace/) | 入門ガイド | [→](https://qoo-006.github.io/school/tools/ai-workspace/) |
 
 ---
 
