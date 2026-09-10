@@ -4,15 +4,25 @@
   "accent": "#2c4198",
   "accent2": "#fdd000",
   "units": {
-    "seminar-1":            { "name": "情報科学セミナーⅠ", "meta": "3年 / 経営情報システム研究室（三木研）" },
-    "predictive-modeling":  { "name": "予測モデリング", "meta": "3年" },
-    "english":              { "name": "英語", "meta": "3年" }
+    "seminar-1": {
+      "name": "情報科学セミナーⅠ",
+      "meta": "3年 / 経営情報システム研究室（三木研）"
+    },
+    "predictive-modeling": {
+      "name": "予測モデリング",
+      "meta": "3年"
+    },
+    "english": {
+      "name": "英語",
+      "meta": "3年"
+    }
   },
   "items": {
     "english/self-introduction-writing": {
       "title": "自己紹介とパラグラフライティング",
       "desc": "授業でやることの整理、Self-introduction、趣味についての1パラグラフ",
-      "tag": "課題"
+      "tag": "課題",
+      "date": "2026-09-10"
     }
   }
 }

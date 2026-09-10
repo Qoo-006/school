@@ -25,12 +25,12 @@ main{padding:44px 24px 80px}
 .unit-name{font-size:1.2rem;font-weight:700;color:var(--accent)}
 .unit-meta{font-size:.82rem;color:var(--muted)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;
-  padding:20px 22px;text-decoration:none;color:inherit;transition:.16s}
+.card{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:20px 22px;text-decoration:none;color:inherit;transition:.16s}
 .card:hover{border-color:var(--accent2);box-shadow:0 4px 18px rgba(0,0,0,.08);transform:translateY(-2px)}
 .card-title{font-weight:700;color:var(--accent);margin-bottom:6px;font-size:1.02rem}
 .card-desc{font-size:.86rem;color:var(--muted);line-height:1.6}
-.card-foot{display:flex;align-items:center;gap:8px;margin-top:12px}
+.card-foot{display:flex;align-items:center;gap:8px;margin-top:auto;padding-top:12px}
 .tag{display:inline-block;background:var(--accent2);color:#fff;font-size:.7rem;font-weight:700;
   padding:2px 8px;border-radius:4px;letter-spacing:.03em}
 .date{font-size:.72rem;color:var(--muted)}
