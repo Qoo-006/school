@@ -30,7 +30,7 @@
     },
     "tools/ai-workspace": {
       "title": "Codexから始める AI作業環境入門",
-      "desc": "Codexのターミナル操作、Obsidian、Notionの学生プラン、API・MCPを、申込サイトとスクリーンショット付きで紹介。",
+      "desc": "Windows・MacでのCodexのターミナル操作、Obsidian、Notionの学生プラン、API・MCPを、申込サイトとスクリーンショット付きで紹介。",
       "tag": "入門ガイド",
       "date": "2026-09-11"
     }
