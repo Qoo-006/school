@@ -13,8 +13,11 @@
 | **情報科学セミナーⅠ**<br>（経営情報システム研究室／三木研） | [BVH動作解析](seminar-1/bvh-motion/) | レポート + 発表PPTX | [→](https://qoo-006.github.io/school/seminar-1/bvh-motion/) |
 | | [飲料戦略分析](seminar-1/beverage/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/beverage/) |
 | | [八王子 中古マンション価格分析](seminar-1/hachioji-mansion/) | レポート | [→](https://qoo-006.github.io/school/seminar-1/hachioji-mansion/) |
+| **情報科学セミナーⅡ**<br>（経営情報システム研究室／三木研） | [自己紹介（研究室配属後の初回発表）](seminar-2/self-introduction/) | 発表スライド | [→](https://qoo-006.github.io/school/seminar-2/self-introduction/) |
 | **予測モデリング** | [ベイズ統計 学習ノート](predictive-modeling/bayes/) | 学習ノート | [→](https://qoo-006.github.io/school/predictive-modeling/bayes/) |
 | **英語** | [自己紹介とパラグラフライティング](english/self-introduction-writing/) | 課題 | [→](https://qoo-006.github.io/school/english/self-introduction-writing/) |
+| | [Imitation ① 読み上げ台本](english/imitation-01/) | 課題 | [→](https://qoo-006.github.io/school/english/imitation-01/) |
+| **応用計量経済分析演習（PBL）** | [課題02（dplyrでのデータ操作）](applied-econometrics/assignment-02/) | レポート | [→](https://qoo-006.github.io/school/applied-econometrics/assignment-02/) |
 | **ツール**（授業とは別枠） | [Claude Code スターターキット セットアップガイド](starter-kit/) | 手順書 | [→](https://qoo-006.github.io/school/starter-kit/) |
 | | [Codexから始める AI作業環境入門](tools/ai-workspace/) | 入門ガイド | [→](https://qoo-006.github.io/school/tools/ai-workspace/) |
 

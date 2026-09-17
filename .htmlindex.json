@@ -19,6 +19,14 @@
     "tools": {
       "name": "ツール",
       "meta": "授業とは別枠"
+    },
+    "seminar-2": {
+      "name": "情報科学セミナーⅡ",
+      "meta": "3年 / 経営情報システム研究室（三木研）"
+    },
+    "applied-econometrics": {
+      "name": "応用計量経済分析演習（PBL）",
+      "meta": "3年"
     }
   },
   "items": {
@@ -33,6 +41,24 @@
       "desc": "Windows・MacでのCodexのターミナル操作、Obsidian、Notionの学生プラン、API・MCPを、申込サイトとスクリーンショット付きで紹介。",
       "tag": "入門ガイド",
       "date": "2026-09-11"
+    },
+    "seminar-2/self-introduction": {
+      "title": "自己紹介（研究室配属後の初回発表）",
+      "desc": "経歴・関心・いま作っているものを1枚ずつにまとめた発表スライド。工学院テンプレ版のPPTX/PDFに書き出して提出した。",
+      "tag": "発表スライド",
+      "date": "2026-09-17"
+    },
+    "english/imitation-01": {
+      "title": "Imitation ① 読み上げ台本",
+      "desc": "音声のイミテーション課題（2分07秒〜3分43秒）の読み上げ台本。区切り・強勢・言い回しをメモしてある。",
+      "tag": "課題",
+      "date": "2026-09-17"
+    },
+    "applied-econometrics/assignment-02": {
+      "title": "課題02（dplyrでのデータ操作）",
+      "desc": "フライトデータの絞り込み・並べ替え・集計。Quarto（.qmd）から書き出した自己完結HTML。",
+      "tag": "レポート",
+      "date": "2026-09-16"
     }
   }
 }

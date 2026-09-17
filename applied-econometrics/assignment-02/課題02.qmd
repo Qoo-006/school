@@ -1,0 +1,124 @@
+---
+title: "応用計量経済分析演習（PBL） 課題02"
+author: "j324247 平松瑠希"
+date: "2026-09-16"
+lang: ja
+format:
+  html:
+    embed-resources: true
+    toc: true
+execute:
+  echo: true
+  message: false
+  warning: true
+---
+
+```{r}
+library(nycflights13)
+library(tidyverse)
+```
+
+## （1）flightsの表示
+
+```{r}
+flights
+```
+
+## （2）glimpse()との表示の違い
+
+```{r}
+glimpse(flights)
+```
+
+`flights` はデータを表として表示し、先頭の行と、表示幅に収まる列を示す。表示しきれない行や列は省略される。
+
+一方、`glimpse(flights)` は列ごとに1行を使い、全列の名前、型、先頭の値を表示する。どちらもデータ全体の行数と列数を示すが、`glimpse()` では列の構成を一覧で確認できる。
+
+## （3）条件に合うフライトの抽出
+
+### （a）1月1日に出発したフライト
+
+```{r}
+flights_jan1 <- flights |>
+  filter(month == 1, day == 1)
+flights_jan1
+```
+
+該当するのは `r nrow(flights_jan1)` 件である。
+
+### （b）出発が2時間以上遅れたフライト
+
+出発遅延時間 `dep_delay` の単位は分なので、120分以上を条件にする。
+
+```{r}
+flights_delayed <- flights |>
+  filter(dep_delay >= 120)
+flights_delayed
+```
+
+該当するのは `r nrow(flights_delayed)` 件である。出発遅延時間が欠損している行は条件を判定できないため、抽出結果には含まれない。
+
+### （c）1月1日に出発し、出発が2時間以上遅れたフライト
+
+```{r}
+flights_jan1_delayed <- flights |>
+  filter(month == 1, day == 1, dep_delay >= 120)
+flights_jan1_delayed
+```
+
+該当するのは `r nrow(flights_jan1_delayed)` 件である。
+
+### （d）到着空港がヒューストン市内のフライト
+
+```{r}
+flights_houston <- flights |>
+  filter(dest == "IAH" | dest == "HOU")
+flights_houston
+```
+
+該当するのは `r nrow(flights_houston)` 件である。
+
+## （4）並べ替えと列の移動
+
+### （a）距離の降順
+
+```{r}
+flights_distance <- flights |>
+  arrange(desc(distance)) |>
+  relocate(distance, .before = 1)
+flights_distance
+```
+
+### （b）到着遅延時間の降順
+
+```{r}
+flights_arr_delay <- flights |>
+  arrange(desc(arr_delay)) |>
+  relocate(arr_delay, .before = 1)
+flights_arr_delay
+```
+
+到着遅延時間が欠損している行は末尾に並ぶ。
+
+## （5）月ごとの総フライト数と平均到着遅延時間
+
+総フライト数は各月の全行を数える。平均到着遅延時間は、設問の指示に従って欠損値を除いて計算する。
+
+```{r}
+monthly_summary <- flights |>
+  group_by(month) |>
+  summarise(
+    total_flights = n(),
+    mean_arr_delay = mean(arr_delay, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  arrange(month)
+
+knitr::kable(
+  monthly_summary,
+  digits = 2,
+  col.names = c("月", "総フライト数", "平均到着遅延時間（分）")
+)
+```
+
+平均到着遅延時間は表示時に小数第2位まで丸めた。負の値は、平均すると予定時刻より早く到着したことを表す。
