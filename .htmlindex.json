@@ -59,6 +59,12 @@
       "desc": "フライトデータの絞り込み・並べ替え・集計。Quarto（.qmd）から書き出した自己完結HTML。",
       "tag": "レポート",
       "date": "2026-09-16"
+    },
+    "tools/codex-model-effort": {
+      "title": "Codex のモデルと effort の割り当て",
+      "desc": "階層ごとのモデル・effort の当て方と、出力1Mトークンあたりの単価",
+      "tag": "設計メモ",
+      "date": "2026-09-16"
     }
   }
 }

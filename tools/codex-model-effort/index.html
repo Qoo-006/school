@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codex のモデルと effort の割り当て</title>
+<style>
+:root{
+  --accent:#0f766e; --accent2:#f59e0b; --accent-soft:#ecfdf5;
+  --text:#17211f; --muted:#5f6b68; --line:#dfe5e3; --bg:#f7faf9; --card:#fff;
+  --node:#2563eb; --node-soft:#eff6ff; --main:#ea8a1e; --off:#94a3a0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hiragino Sans","ヒラギノ角ゴシック","Yu Gothic",sans-serif;
+  color:var(--text);background:var(--bg);line-height:1.8;-webkit-font-smoothing:antialiased}
+.bar{height:6px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent) 70%,var(--accent2) 70%,var(--accent2) 100%)}
+.wrap{max-width:900px;margin:0 auto;padding:0 24px}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:44px 0 36px}
+h1{font-size:1.9rem;font-weight:700;color:var(--accent);letter-spacing:.01em;margin-bottom:10px}
+header .sub{color:var(--muted);font-size:.95rem}
+header .built{color:var(--off);font-size:.78rem;margin-top:14px}
+
+main{padding:40px 0 90px}
+section{margin-bottom:46px}
+h2{font-size:1.28rem;font-weight:700;color:var(--accent);padding-bottom:9px;
+  border-bottom:2px solid var(--accent);margin-bottom:8px}
+.lead{color:var(--muted);font-size:.9rem;margin-bottom:20px}
+h3{font-size:1rem;font-weight:700;margin:24px 0 8px}
+p{font-size:.92rem}
+
+/* ---- 構成図 ---- */
+.tree{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px 24px}
+.node{border:2px solid var(--node);border-radius:11px;padding:16px 20px;background:#fff;
+  display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px}
+.node.main{border-color:var(--main)}
+.node-name{font-weight:700;font-size:1.06rem}
+.node-spec{font-size:.86rem;color:var(--muted);font-family:"SF Mono",Menlo,Consolas,monospace}
+.node-cost{margin-left:auto;background:var(--node-soft);color:#1e40af;font-size:.78rem;
+  font-weight:700;padding:5px 12px;border-radius:6px;white-space:nowrap}
+.node.main .node-cost{background:#fff4e6;color:#9a5b09}
+.edge{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 0}
+.edge-label{font-size:.79rem;color:var(--muted)}
+.edge-line{width:2px;height:22px;background:var(--node)}
+.edge-line::after{content:"";display:block;margin:0 auto;transform:translateY(20px);
+  border:5px solid transparent;border-top-color:var(--node)}
+.row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:stretch}
+.row>div{display:flex;flex-direction:column}
+.row .node{flex-direction:column;align-items:flex-start;gap:5px;flex:1}
+.row .node-cost{margin-left:0;margin-top:auto;padding-top:0}
+.row .node-name{font-size:.98rem}
+.role{font-size:.8rem;color:var(--muted);text-align:center;margin-top:9px}
+
+/* ---- 表 ---- */
+table{width:100%;border-collapse:collapse;font-size:.87rem;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;color:var(--muted);font-weight:700;letter-spacing:.02em;background:#f2f7f6}
+tbody tr:last-child td{border-bottom:none}
+td.num{text-align:right;font-family:"SF Mono",Menlo,Consolas,monospace;white-space:nowrap}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.85em}
+tr.top td{background:#fffaf2}
+
+.tier{display:inline-block;font-size:.71rem;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.tier.hi{background:var(--main);color:#fff}
+.tier.mid{background:#dbeafe;color:#1e40af}
+.tier.lo{background:#eef2f1;color:var(--off)}
+
+.note{border-left:3px solid var(--accent2);background:#fffbeb;padding:13px 17px;
+  border-radius:0 8px 8px 0;font-size:.87rem;margin:16px 0}
+.note strong{font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+ul.pts{margin:0;padding-left:18px}
+ul.pts li{font-size:.9rem;line-height:1.85;margin-bottom:6px}
+ul.pts li:last-child{margin-bottom:0}
+.k{font-weight:700;color:var(--accent)}
+code.inline{background:#eef2f1;padding:1.5px 6px;border-radius:4px;font-size:.85em;
+  font-family:"SF Mono",Menlo,Consolas,monospace}
+
+.calc{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+.calc-box{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:18px 20px}
+.calc-label{font-size:.78rem;color:var(--muted);font-weight:700;letter-spacing:.02em;margin-bottom:6px}
+.calc-val{font-size:1.5rem;font-weight:700;color:var(--accent);line-height:1.3}
+.calc-val small{font-size:.82rem;color:var(--muted);font-weight:400;display:block;margin-top:4px}
+
+footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:.82rem;background:var(--card)}
+
+@media (max-width:640px){
+  h1{font-size:1.3rem}
+  .wrap{padding:0 16px}
+  .row,.calc{grid-template-columns:1fr}
+  .tree{padding:20px 16px}
+  .node{padding:14px 16px}
+  .node-cost{margin-left:0;margin-top:8px;white-space:normal}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+
+<header><div class="wrap">
+  <h1>Codex のモデルと effort の割り当て</h1>
+  <p class="sub">学校ドメインのエージェント構成に当てはめた例</p>
+  <p class="built">2026-09-16 時点</p>
+</div></header>
+
+<main><div class="wrap">
+
+<section>
+  <h2>構成</h2>
+  <p class="lead">最下段の3つは横並びで、worker には中間のモデルを当てる。</p>
+  <div class="tree">
+
+    <div class="node main">
+      <span class="node-name">メインセッション</span>
+      <span class="node-spec">gpt-6-astra ／ effort high</span>
+      <span class="node-cost">出力 1,250 クレジット / 1Mトークン</span>
+    </div>
+    <div class="edge">
+      <span class="edge-label">全体の判断と指示出しだけを担当する</span>
+      <span class="edge-line"></span>
+    </div>
+
+    <div class="node">
+      <span class="node-name">school-director</span>
+      <span class="node-spec">gpt-5.6-terra ／ effort medium</span>
+      <span class="node-cost">出力 300 クレジット / 1Mトークン</span>
+    </div>
+    <div class="edge">
+      <span class="edge-label">依頼を分解して下に配る</span>
+      <span class="edge-line"></span>
+    </div>
+
+    <div class="row">
+      <div>
+        <div class="node">
+          <span class="node-name">school-search</span>
+          <span class="node-spec">gpt-5.6-luna ／ effort low</span>
+          <span class="node-cost">出力 30 クレジット / 1Mトークン</span>
+        </div>
+        <p class="role">資料と課題を探す</p>
+      </div>
+      <div>
+        <div class="node">
+          <span class="node-name">school-worker</span>
+          <span class="node-spec">gpt-5.6-terra ／ effort medium</span>
+          <span class="node-cost">出力 300 クレジット / 1Mトークン</span>
+        </div>
+        <p class="role">レポートを書く</p>
+      </div>
+      <div>
+        <div class="node">
+          <span class="node-name">school-recorder</span>
+          <span class="node-spec">gpt-5.6-luna ／ effort minimal</span>
+          <span class="node-cost">出力 30 クレジット / 1Mトークン</span>
+        </div>
+        <p class="role">やったことを記録する</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>割り当て一覧</h2>
+  <p class="lead">単価は出力 1Mトークンあたり。$ は 1クレジット＝約 $0.04 で換算した。</p>
+  <table>
+    <thead>
+      <tr>
+        <th>階層</th><th>エージェント</th><th>モデル</th><th>effort</th>
+        <th style="text-align:right">クレジット</th><th style="text-align:right">$ 換算</th><th>担当</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="top">
+        <td><span class="tier hi">最上位</span></td>
+        <td><b>メインセッション</b></td>
+        <td class="mono">gpt-6-astra</td>
+        <td class="mono">high</td>
+        <td class="num">1,250</td>
+        <td class="num">約 $50</td>
+        <td>全体の判断と指示出し</td>
+      </tr>
+      <tr>
+        <td><span class="tier mid">中間</span></td>
+        <td><b>school-director</b></td>
+        <td class="mono">gpt-5.6-terra</td>
+        <td class="mono">medium</td>
+        <td class="num">300</td>
+        <td class="num">約 $12</td>
+        <td>依頼を分解して下に配る</td>
+      </tr>
+      <tr>
+        <td><span class="tier mid">中間</span></td>
+        <td><b>school-worker</b></td>
+        <td class="mono">gpt-5.6-terra</td>
+        <td class="mono">medium</td>
+        <td class="num">300</td>
+        <td class="num">約 $12</td>
+        <td>レポートを書く</td>
+      </tr>
+      <tr>
+        <td><span class="tier lo">下位</span></td>
+        <td><b>school-search</b></td>
+        <td class="mono">gpt-5.6-luna</td>
+        <td class="mono">low</td>
+        <td class="num">30</td>
+        <td class="num">約 $1.2</td>
+        <td>資料と課題を探す</td>
+      </tr>
+      <tr>
+        <td><span class="tier lo">下位</span></td>
+        <td><b>school-recorder</b></td>
+        <td class="mono">gpt-5.6-luna</td>
+        <td class="mono">minimal</td>
+        <td class="num">30</td>
+        <td class="num">約 $1.2</td>
+        <td>やったことを記録する</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">
+    同じ 1Mトークンを出力しても、<strong>メインセッションと recorder では単価が約42倍違う</strong>。
+    どの担当にどのモデルを置くかで、同じ作業量でも支払いが変わる。
+  </div>
+</section>
+
+<section>
+  <h2>割り当ての考え方</h2>
+  <p class="lead">太字はどれも元図にある割り当て。そのあとの理由は自分の解釈になる。</p>
+  <div class="card">
+    <ul class="pts">
+      <li><span class="k">上ほど高いモデル、下ほど安いモデルを置く。</span>
+          探す・記録するだけの担当に最上位モデルは要らない</li>
+      <li><span class="k">search には low、recorder には minimal を当てる。</span>
+          search は決まった場所を見に行き、recorder は決まった形式で書き出すので、effort を下げている</li>
+      <li><span class="k">worker には director と同じ中間のモデルを当てる。</span>
+          レポート本文を作るので、low まで下げてよいかは未検証</li>
+      <li><span class="k">メインセッションには実作業を持たせない。</span>
+          判断と指示出しに絞ると、最上位モデルの出力トークン量が減る</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>コストの見方</h2>
+  <p class="lead">前提は2つあり、3枚目はそこから計算した値になる。</p>
+  <div class="calc">
+    <div class="calc-box">
+      <div class="calc-label">1クレジット</div>
+      <div class="calc-val">約 $0.04<small>クレジット数 × 0.04 が概算のドル</small></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">出力の重さ</div>
+      <div class="calc-val">入力の約6倍<small>同じトークン数でも出力側の消費が大きい</small></div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-label">最上位と下位の差</div>
+      <div class="calc-val">約42倍<small>1,250 ÷ 30</small></div>
+    </div>
+  </div>
+  <div class="note">
+    出力が入力の約6倍を消費するため、<strong>削るなら出力量から削る</strong>。
+    下位エージェントには長文を書かせず、必要な行だけ上へ返させる。
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  数値は 2026-09-16 時点のもの。モデル名・単価は変わるので、使う前に現行の料金表で確認する。
+</div></footer>
+
+</body>
+</html>
