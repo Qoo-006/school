@@ -65,6 +65,12 @@
       "desc": "階層ごとのモデル・effort の当て方と、出力1Mトークンあたりの単価",
       "tag": "設計メモ",
       "date": "2026-09-16"
+    },
+    "tools/codex-setup-order": {
+      "title": "Codex 側を動かすまでの順序",
+      "desc": "Claude Code 側の構成を Codex に移すとき、何をどの順でやるか",
+      "tag": "設計メモ",
+      "date": "2026-09-17"
     }
   }
 }

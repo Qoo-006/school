@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Codex 側を動かすまでの順序</title>
+<style>
+:root{
+  --accent:#0f766e; --accent2:#f59e0b; --accent-soft:#ecfdf5;
+  --text:#17211f; --muted:#5f6b68; --line:#dfe5e3; --bg:#f7faf9; --card:#fff;
+  --warn:#b45309; --off:#94a3a0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Hiragino Sans","ヒラギノ角ゴシック","Yu Gothic",sans-serif;
+  color:var(--text);background:var(--bg);line-height:1.8;-webkit-font-smoothing:antialiased}
+.bar{height:6px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent) 70%,var(--accent2) 70%,var(--accent2) 100%)}
+.wrap{max-width:900px;margin:0 auto;padding:0 24px}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:44px 0 36px}
+h1{font-size:1.9rem;font-weight:700;color:var(--accent);letter-spacing:.01em;margin-bottom:10px}
+header .sub{color:var(--muted);font-size:.95rem}
+header .built{color:var(--off);font-size:.78rem;margin-top:14px}
+
+main{padding:40px 0 90px}
+section{margin-bottom:46px}
+h2{font-size:1.28rem;font-weight:700;color:var(--accent);padding-bottom:9px;
+  border-bottom:2px solid var(--accent);margin-bottom:8px}
+.lead{color:var(--muted);font-size:.9rem;margin-bottom:20px}
+p{font-size:.92rem}
+
+table{width:100%;border-collapse:collapse;font-size:.88rem;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;overflow:hidden}
+th,td{text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.78rem;color:var(--muted);font-weight:700;letter-spacing:.02em;background:#f2f7f6}
+tbody tr:last-child td{border-bottom:none}
+td.num{text-align:right;font-family:"SF Mono",Menlo,Consolas,monospace;white-space:nowrap}
+.mono{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:.86em}
+code.inline{background:#eef2f1;padding:1.5px 6px;border-radius:4px;font-size:.85em;
+  font-family:"SF Mono",Menlo,Consolas,monospace}
+
+/* ---- 手順 ---- */
+.steps{counter-reset:step}
+.step{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:22px 26px 20px 68px;margin-bottom:14px}
+.step::before{counter-increment:step;content:counter(step);
+  position:absolute;left:22px;top:22px;width:30px;height:30px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:.9rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center}
+.step-title{font-size:1.04rem;font-weight:700;margin-bottom:6px}
+.step-body{font-size:.9rem;color:var(--text)}
+.step-body p+p{margin-top:8px}
+.step-body ul+p{margin-top:12px}
+.step-body ul.pts{margin:8px 0 0}
+.step-body a{color:var(--accent)}
+.why{margin-top:10px;padding:10px 14px;background:var(--accent-soft);border-radius:8px;
+  font-size:.85rem;color:var(--text)}
+.why b{color:var(--accent);font-weight:700}
+.gate{display:inline-block;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;
+  background:#fef3c7;color:var(--warn);margin-left:8px;vertical-align:middle;white-space:nowrap}
+
+.note{border-left:3px solid var(--accent2);background:#fffbeb;padding:13px 17px;
+  border-radius:0 8px 8px 0;font-size:.87rem;margin:16px 0}
+.note strong{font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:22px 24px}
+ul.pts{margin:0;padding-left:18px}
+ul.pts li{font-size:.9rem;line-height:1.85;margin-bottom:6px}
+ul.pts li:last-child{margin-bottom:0}
+.k{font-weight:700;color:var(--accent)}
+
+footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-size:.82rem;background:var(--card)}
+
+@media (max-width:640px){
+  h1{font-size:1.3rem}
+  .wrap{padding:0 16px}
+  .step{padding:20px 18px 18px 18px}
+  .step::before{position:static;margin-bottom:10px}
+  table{display:block;overflow-x:auto;white-space:nowrap}
+}
+</style>
+</head>
+<body>
+<div class="bar"></div>
+
+<header><div class="wrap">
+  <h1>Codex 側を動かすまでの順序</h1>
+  <p class="sub">Claude Code 側の構成を Codex に持っていくとき、何から手をつけるか</p>
+  <p class="built">2026-09-17 時点</p>
+</div></header>
+
+<main><div class="wrap">
+
+<section>
+  <h2>いまの差</h2>
+  <p class="lead">同じ Qoo.000 の中で、2つの環境が持っているものの数を並べる。</p>
+  <table>
+    <thead>
+      <tr><th>持ちもの</th><th style="text-align:right">Claude Code</th><th style="text-align:right">Codex</th><th>置き場</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>エージェント</td>
+        <td class="num">20体</td>
+        <td class="num">1体</td>
+        <td class="mono">.claude/agents/ ／ .codex/agents/</td>
+      </tr>
+      <tr>
+        <td>スキル</td>
+        <td class="num">13本</td>
+        <td class="num">0本</td>
+        <td class="mono">.claude/skills/ ／ .codex/skills/（無し）</td>
+      </tr>
+      <tr>
+        <td>司令塔ファイル</td>
+        <td class="num">CLAUDE.md</td>
+        <td class="num">同じ実体</td>
+        <td class="mono">AGENTS.md → .claude/CLAUDE.md</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="note">
+    Codex 側の1体（<code class="inline">qlaude-003.toml</code>）は <strong>2026-06-09 に作ったまま更新されていない</strong>。
+    本文には、廃止した Craft・退避したスキル・登録を解除したエージェントなど、
+    <strong>今は存在しない参照が13種類</strong>残っている。
+  </div>
+</section>
+
+<section>
+  <h2>順序</h2>
+  <p class="lead">順序は自分で決めた。数値と設定値は実物から取っている。3までは移す前の下ごしらえで、4以降が実際の移植になる。</p>
+
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-title">effort の既定値を決める<span class="gate">先に決める</span></div>
+      <div class="step-body">
+        <p><code class="inline">~/.codex/config.toml</code> は現在 <code class="inline">model = "gpt-6-astra"</code> /
+        <code class="inline">model_reasoning_effort = "medium"</code>。メインセッションを high にするなら、ここを変える。</p>
+        <div class="why"><b>なぜ先か：</b>グローバル設定なので、後から変えると各エージェントの出力クレジットを同じ条件で比べられなくなる</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">qlaude-003.toml を現行ルールに合わせる</div>
+      <div class="step-body">
+        <p>落とすもの：</p>
+        <ul class="pts">
+          <li>廃止したもの：Craft（2026-08-30 に廃止・<code class="inline">craft_read</code> を含む）</li>
+          <li>退避したスキル：daily-report / research-note / learn-url / post-create / idea-gather / food-tracking</li>
+          <li>登録を解除したエージェント：sns-director / develop-director / develop-engineer</li>
+        </ul>
+        <p><code class="inline">~/Desktop/{intern,school,sns}/</code> も、現行は
+        <code class="inline">{school,intern,ATOLLS}</code> に変わっている。</p>
+        <p>MCP まわりは表記が混ざっている。「Codex.ai Google Calendar」と書かれている一方、
+        ツール名は <code class="inline">mcp__claude_ai_Google_Calendar__*</code> のまま残っている。
+        Claude 用の文章を置換したときの取りこぼしだと見ている。</p>
+        <div class="why"><b>なぜ2番目か：</b>ここが直らないと、新しい toml を複製したときに古い参照ごと写る</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">AGENTS.md を分けるかどうか決める</div>
+      <div class="step-body">
+        <p>いまは <code class="inline">AGENTS.md</code> が <code class="inline">.claude/CLAUDE.md</code> へのシンボリックリンクで、
+        両方が同じ本文を読んでいる。ツール名・スキル名・コマンド名は2つの環境で違うので、
+        共通部分と環境ごとの部分を分けるか、1本のまま書き分けるかを決める。</p>
+        <div class="why"><b>なぜ移植の前か：</b>分けると決めた場合、各エージェントの本文の書き方が変わる</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">school の4体を移して、モデルと effort を書く</div>
+      <div class="step-body">
+        <p>school-director / school-search / school-worker / school-recorder を
+        <code class="inline">.codex/agents/*.toml</code> に置く。ドメインは school ひとつに絞る。</p>
+        <p>director と worker は <code class="inline">gpt-5.6-terra</code> / medium、
+        search は <code class="inline">gpt-5.6-luna</code> / low、recorder は <code class="inline">gpt-5.6-luna</code> / minimal。</p>
+        <div class="why"><b>なぜ school から：</b><a href="../codex-model-effort/">Codex のモデルと effort の割り当て</a>を、この4体を例に組んである</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">呼ばれた回数を見てから次のドメインへ<span class="gate">実績を待つ</span></div>
+      <div class="step-body">
+        <p>intern / dev / 事業 は、school の4体が実際に呼ばれてから同じ形で足す。</p>
+        <div class="why"><b>なぜ待つか：</b>Claude Code 側で、定義した69体のうち実際に呼ばれたのは4体だった</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>広げるときに守ること</h2>
+  <div class="card">
+    <ul class="pts">
+      <li><span class="k">4ドメイン分を一度に作らない。</span>
+          Claude Code 側は69体まで増やしてから20体に戻した。同じことを Codex 側で繰り返さない</li>
+      <li><span class="k">20体をそのまま移さない。</span>
+          移すのは、Claude Code 側で呼ばれた実績があるものだけ</li>
+      <li><span class="k">置いた数ではなく、呼ばれた数で判断する。</span>
+          定義ファイルは置くだけで毎回のコンテキストを消費する</li>
+    </ul>
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  設定値は 2026-09-17 時点で確認したもの。<code class="inline">~/.codex/config.toml</code> と
+  <code class="inline">.codex/agents/</code> を直接見て書いている。
+</div></footer>
+
+</body>
+</html>

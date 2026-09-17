@@ -21,6 +21,7 @@
 | **ツール**（授業とは別枠） | [Claude Code スターターキット セットアップガイド](starter-kit/) | 手順書 | [→](https://qoo-006.github.io/school/starter-kit/) |
 | | [Codexから始める AI作業環境入門](tools/ai-workspace/) | 入門ガイド | [→](https://qoo-006.github.io/school/tools/ai-workspace/) |
 | | [Codex のモデルと effort の割り当て](tools/codex-model-effort/) | 設計メモ | [→](https://qoo-006.github.io/school/tools/codex-model-effort/) |
+| | [Codex 側を動かすまでの順序](tools/codex-setup-order/) | 設計メモ | [→](https://qoo-006.github.io/school/tools/codex-setup-order/) |
 
 ---
 
