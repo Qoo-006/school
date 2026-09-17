@@ -130,11 +130,14 @@ footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-s
   <div class="steps">
 
     <div class="step">
-      <div class="step-title">effort の既定値を決める<span class="gate">先に決める</span></div>
+      <div class="step-title">config.toml の既定値を決める<span class="gate">先に決める</span></div>
       <div class="step-body">
         <p><code class="inline">~/.codex/config.toml</code> は現在 <code class="inline">model = "gpt-6-astra"</code> /
         <code class="inline">model_reasoning_effort = "medium"</code>。メインセッションを high にするなら、ここを変える。</p>
-        <div class="why"><b>なぜ先か：</b>グローバル設定なので、後から変えると各エージェントの出力クレジットを同じ条件で比べられなくなる</div>
+        <p><code class="inline">approval_policy</code> と <code class="inline">sandbox_mode</code> は、
+        グローバルにもプロジェクトにも書かれていない。どちらも既定値のまま動いている。
+        値の候補は「外の記事から取り入れるもの」に置いた。</p>
+        <div class="why"><b>なぜ先か：</b>グローバル設定なので、後から変えると出力クレジットを同じ条件で比べられなくなり、承認とサンドボックスの挙動も途中で変わる</div>
       </div>
     </div>
 
@@ -185,6 +188,41 @@ footer{border-top:1px solid var(--line);padding:26px 0;color:var(--muted);font-s
       </div>
     </div>
 
+  </div>
+</section>
+
+<section>
+  <h2>外の記事から取り入れるもの</h2>
+  <p class="lead">出どころは
+    <a href="https://x.com/Codestudiopjbk/status/2049638285019132304">Codex Studio の解説記事</a>で、
+    2026年4月時点に書かれている。うちの環境にまだ入っていないものだけを拾った。
+    各項目の最後の一文には、うちに当てはめたときの自分の見立てを入れた。</p>
+
+  <div class="note">
+    記事は GPT-5.5 を前提に書かれている。<strong>うちは <code class="inline">gpt-6-astra</code> と
+    <code class="inline">gpt-5.6</code> 系で、記事より後の世代を使っている</strong>。
+    推論努力の最小段階も、記事は <code class="inline">none</code>、こちらの割り当ては
+    <code class="inline">minimal</code> で呼び名が合わない。
+    料金も、記事は API 直課金（出力 $30 / 1Mトークン）で、こちらはクレジット制を使う。
+    <strong>記事に出てくる数字は、モデル名も単価もしきい値も、そのまま持ってこない。</strong>
+  </div>
+
+  <div class="card">
+    <ul class="pts">
+      <li><span class="k">承認ポリシーとサンドボックスを書く。</span>
+          記事の推奨は <code class="inline">approval_policy = "on-request"</code> と
+          <code class="inline">sandbox_mode = "workspace-write"</code>。
+          前者は境界を超える操作の前に確認を出し、後者はワークスペースの外に触らせない</li>
+      <li><span class="k">プロンプトを4要素で組む。</span>
+          Goal（目的）／ Context（状況）／ Constraints（やってはいけないこと）／
+          Done when（何をもって完了とするか）。各エージェントの本文を書き直すときの型として使える</li>
+      <li><span class="k">下位エージェントに渡す入力を短くする。</span>
+          272,000トークンを超える入力は、入力は2倍、出力は1.5倍になる。
+          1枚目は出力を削る話だったが、入力の側にも単価の境目がある</li>
+      <li><span class="k">急がない処理は Batch と Flex に回す。</span>
+          標準の50%オフで、すぐに返事が要らない処理に向く。
+          recorder のように、その場で読まない出力から試せる</li>
+    </ul>
   </div>
 </section>
 
